@@ -1,0 +1,7 @@
+syntax: glob
+
+[Bb]in/
+[Oo]bj/
+launchSettings.json
+.vs/
+msbuild.binlog
