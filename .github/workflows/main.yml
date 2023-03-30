@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to create'     
+        required: true
+
+jobs:
+  build_and_test:
+    runs-on: windows-latest
+    name: Build
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Build (CI)
+        if: ${{ github.event.inputs.version == '' }}
+        run: |
+          cd sizoscope
+          dotnet pack sizoscope.csproj -o .\nupkg
+      - name: Build (CD)
+        if: ${{ github.event.inputs.version != '' }}
+        run: |
+          cd sizoscope
+          dotnet pack sizoscope.csproj -o .\nupkg  -p:Version=${{ github.event.inputs.version }}
+      - name: Archive NuGet (CI)
+        if: ${{ github.event.inputs.version == '' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: sizoscope.${{ github.event.inputs.version }}.nupkg
+          path: sizoscope/nupkg/sizoscope.42.42.42.42.nupkg
+      - name: Archive NuGet (CD)
+        if: ${{ github.event.inputs.version != '' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: sizoscope.${{ github.event.inputs.version }}.nupkg
+          path: sizoscope/nupkg/sizoscope.${{ github.event.inputs.version }}.nupkg
+      - name: Create tag
+        if: ${{ github.event.inputs.version != '' && github.actor == 'MichalStrehovsky' }}
+        run: |
+          git tag v${{ github.event.inputs.version }}
+          git push origin v${{ github.event.inputs.version }}
