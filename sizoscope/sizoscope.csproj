@@ -37,6 +37,18 @@
       <Pack>true</Pack>
       <PackagePath>/</PackagePath>
     </None>
+    <None Include="../docs/diffwindow.png">
+      <Pack>true</Pack>
+      <PackagePath>/docs/</PackagePath>
+    </None>
+    <None Include="../docs/mainwindow.png">
+      <Pack>true</Pack>
+      <PackagePath>/docs/</PackagePath>
+    </None>
+    <None Include="../docs/rootswindow.png">
+      <Pack>true</Pack>
+      <PackagePath>/docs/</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
