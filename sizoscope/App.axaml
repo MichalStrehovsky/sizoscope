@@ -1,0 +1,11 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:sizoscope"
+             x:Class="sizoscope.App"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:sty="using:FluentAvalonia.Styling">
+	<Application.Styles>
+		<sty:FluentAvaloniaTheme PreferUserAccentColor="True" PreferSystemTheme="True" />
+	</Application.Styles>
+
+</Application>
