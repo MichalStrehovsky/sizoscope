@@ -47,8 +47,9 @@ public class MainWindowViewModel : INotifyPropertyChanged
                 if (value is null || value == FileName) return;
 
                 fileName = value;
-                _data = Read(value);
+                PropertyChanged?.Invoke(this, new(nameof(FileName)));
 
+                _data = Read(value);
                 RefreshTree(Items, _data, Sorter);
                 RefreshSearch();
             }

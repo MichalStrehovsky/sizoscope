@@ -6,8 +6,8 @@
 		xmlns:vm="using:sizoscope.ViewModels"
 		xmlns:controls="using:FluentAvalonia.UI.Controls"
 		xmlns:conv="using:sizoscope.Converters"
-        Width="1280" Height="750"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="800"
+        Width="800" Height="400"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
         x:Class="sizoscope.MainWindow"
 		x:DataType="vm:MainWindowViewModel"
         Title="Sizoscope">
@@ -38,13 +38,21 @@
 					</Button>
 				</Border>
 			</Grid>
-			<TreeView ItemsSource="{Binding Items}" Grid.Row="1">
+			<TreeView ItemsSource="{Binding Items}" Grid.Row="1" IsVisible="{Binding FileName, Converter={x:Static StringConverters.IsNotNullOrEmpty},Mode=OneWay}">
 				<TreeView.ItemTemplate>
 					<TreeDataTemplate ItemsSource="{Binding Nodes}">
-						<TextBlock Text="{Binding Name}" />
+						<Border ToolTip.Tip="{Binding Name}">
+							<TextBlock Text="{Binding Name}" />
+						</Border>
 					</TreeDataTemplate>
 				</TreeView.ItemTemplate>
 			</TreeView>
+			<Grid Grid.Row="1" IsVisible="{Binding FileName, Converter={x:Static StringConverters.IsNullOrEmpty},Mode=OneWay}">
+				<StackPanel Margin="0,-80,0,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+					<TextBlock FontSize="24" Text="Welcome" HorizontalAlignment="Center" />
+					<Button Margin="0,8,0,0" Content="Open a file to continue..." Click="Open_Clicked" HorizontalAlignment="Center" />
+				</StackPanel>
+			</Grid>
 		</Grid>
 		<GridSplitter Grid.Column="1" />
 		<Grid Grid.Column="2" RowDefinitions="Auto,*" Margin="4">
@@ -58,7 +66,7 @@
 			</Grid>
 			<ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
 				<Grid RowDefinitions="Auto,Auto,*">
-					<Grid Grid.Row="0" ColumnDefinitions="100,Auto,150,Auto,150" Margin="4">
+					<Grid Grid.Row="0" ColumnDefinitions="80,Auto,120,Auto,120" Margin="4">
 						<TextBlock Text="Name" Grid.Column="0" Margin="0,4,0,0" TextAlignment="Center" x:Name="Column1Header" />
 						<GridSplitter Grid.Column="1" />
 						<TextBlock Text="Exclusive Size" Grid.Column="2" Margin="4,4,0,0" TextAlignment="Center" x:Name="Column2Header" />
