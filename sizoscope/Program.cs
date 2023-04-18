@@ -1,5 +1,4 @@
 using Avalonia;
-using System.Runtime.InteropServices;
 
 namespace sizoscope
 {

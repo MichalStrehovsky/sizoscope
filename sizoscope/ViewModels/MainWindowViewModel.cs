@@ -1,113 +1,168 @@
-﻿using System;
+﻿using Avalonia.Threading;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 using static MstatData;
+using static sizoscope.TreeLogic;
 
 namespace sizoscope.ViewModels;
 
 public class MainWindowViewModel : INotifyPropertyChanged
 {
+    public MainWindowViewModel()
+    {
+        searchDebouncer = new(TimeSpan.FromMilliseconds(500), DispatcherPriority.Normal, ExecuteSearch);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private MstatData? _data;
     private string? fileName;
+    private int sortMode;
+    private int searchMode;
+    private string? searchPattern;
+    private readonly DispatcherTimer searchDebouncer;
 
-
-    public TreeLogic.Sorter Sorter { get; set; } = TreeLogic.Sorter.BySize();
     public ObservableCollection<TreeNode> Items { get; } = new();
+    public ObservableCollection<SearchResultItem> SearchResult { get; } = new();
+    public Sorter Sorter => SortMode is 0 ? Sorter.BySize() : Sorter.ByName();
+
+    public void Refresh()
+    {
+        if (_data is not null)
+        {
+            RefreshTree(Items, _data, Sorter);
+            RefreshSearch();
+        }
+    }
 
     public string? FileName
     {
         get => fileName;
         set
         {
-            if (value is null || value == FileName) return;
+            if (value != fileName)
+            {
+                if (value is null || value == FileName) return;
 
-            fileName = value;
-            _data = Read(value);
+                fileName = value;
+                _data = Read(value);
 
-            TreeLogic.RefreshTree(Items, _data, Sorter);
-            // RefreshSearch();
+                RefreshTree(Items, _data, Sorter);
+                RefreshSearch();
+            }
         }
     }
 
-    //private void RefreshSearch()
-    //{
-    //    const int MaxSearchResults = 250;
+    public int SortMode
+    {
+        get => sortMode;
+        set
+        {
+            if (value != sortMode)
+            {
+                sortMode = value;
+                PropertyChanged?.Invoke(this, new(nameof(SortMode)));
+                PropertyChanged?.Invoke(this, new(nameof(Sorter)));
+                if (_data is not null)
+                {
+                    RefreshTree(Items, _data, Sorter);
+                }
+            }
+        }
+    }
 
-    //    _searchResultsListView.BeginUpdate();
-    //    _searchResultsListView.Items.Clear();
+    public int SearchMode
+    {
+        get => searchMode;
+        set
+        {
+            if (value != searchMode)
+            {
+                searchMode = value;
+                PropertyChanged?.Invoke(this, new(nameof(SearchMode)));
+                RefreshSearch();
+            }
+        }
+    }
 
-    //    if (_searchTextBox.Text.Length > 0)
-    //    {
-    //        foreach (var asm in _data.GetScopes())
-    //        {
-    //            if (asm.Name == "System.Private.CompilerGenerated")
-    //                continue;
+    public string? SearchPattern
+    {
+        get => searchPattern;
+        set
+        {
+            if (value != searchPattern)
+            {
+                searchPattern = value;
+                PropertyChanged?.Invoke(this, new(nameof(SearchPattern)));
+                searchDebouncer.Stop();
+                searchDebouncer.Start();
+            }
+        }
+    }
 
-    //            AddTypes(asm.GetTypes());
-    //        }
-    //    }
+    private void ExecuteSearch(object? sender, EventArgs args)
+    {
+        searchDebouncer.Stop();
+        RefreshSearch();
+    }
 
-    //    static void AddTypes(Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope> types)
-    //    {
-    //        foreach (var t in types)
-    //        {
-    //            if (_searchResultsListView.Items.Count >= MaxSearchResults)
-    //                return;
+    private void RefreshSearch()
+    {
+        if (searchPattern is null || _data is null)
+        {
+            return;
+        }
 
-    //            if (t.Name.Contains(_searchTextBox.Text) || t.Namespace.Contains(_searchTextBox.Text))
-    //            {
-    //                var newItem = new ListViewItem(new string[]
-    //                {
-    //                        t.ToString(),
-    //                        TreeLogic.AsFileSize(t.Size),
-    //                        TreeLogic.AsFileSize(t.AggregateSize)
-    //                });
+        SearchResult.Clear();
 
-    //                newItem.Tag = t;
+        if (searchPattern.Length > 0)
+        {
+            foreach (var asm in _data.GetScopes())
+            {
+                if (asm.Name == "System.Private.CompilerGenerated")
+                    continue;
 
-    //                _searchResultsListView.Items.Add(newItem);
-    //            }
+                AddTypes(asm.GetTypes());
+            }
+        }
 
-    //            AddTypes(t.GetNestedTypes());
+        void AddTypes(Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope> types)
+        {
+            foreach (var t in types)
+            {
+                if (t.Name.Contains(searchPattern) || t.Namespace.Contains(searchPattern))
+                {
+                    var newItem = new SearchResultItem(t.ToString(), t.Size, t.AggregateSize);
 
-    //            if (_searchComboBox.SelectedIndex is 0 or 2)
-    //                AddMembers(t.GetMembers());
-    //        }
-    //    }
+                    newItem.Tag = t;
 
-    //    static void AddMembers(Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType> members)
-    //    {
-    //        foreach (var m in members)
-    //        {
-    //            if (_searchResultsListView.Items.Count >= MaxSearchResults)
-    //                return;
+                    SearchResult.Add(newItem);
+                }
 
-    //            if (m.Name.Contains(_searchTextBox.Text))
-    //            {
-    //                var newItem = new ListViewItem(new string[]
-    //                {
-    //                    m.ToQualifiedString(),
-    //                    TreeLogic.AsFileSize(m.Size),
-    //                    TreeLogic.AsFileSize(m.AggregateSize)
-    //                });
+                AddTypes(t.GetNestedTypes());
 
-    //                newItem.Tag = m;
+                if (searchMode is 0 or 2)
+                    AddMembers(t.GetMembers());
+            }
+        }
 
-    //                _searchResultsListView.Items.Add(newItem);
-    //            }
-    //        }
-    //    }
+        void AddMembers(Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType> members)
+        {
+            foreach (var m in members)
+            {
+                if (m.Name.Contains(searchPattern))
+                {
+                    var newItem = new SearchResultItem(m.ToString(), m.Size, m.AggregateSize);
 
-    //    _searchResultsListView.EndUpdate();
-    //}
+                    newItem.Tag = m;
+
+                    SearchResult.Add(newItem);
+                }
+            }
+        }
+    }
 
     class SearchResultComparer : IComparer
     {
@@ -135,6 +190,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
                     MstatTypeSpecification spec => SortColumn == 1 ? spec.Size : spec.AggregateSize,
                     MstatMemberDefinition mem => SortColumn == 1 ? mem.Size : mem.AggregateSize,
                     MstatMethodSpecification met => met.Size,
+                    _ => throw new InvalidOperationException()
                 };
                 int v2 = i2.Tag switch
                 {
@@ -142,6 +198,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
                     MstatTypeSpecification spec => SortColumn == 1 ? spec.Size : spec.AggregateSize,
                     MstatMemberDefinition mem => SortColumn == 1 ? mem.Size : mem.AggregateSize,
                     MstatMethodSpecification met => met.Size,
+                    _ => throw new InvalidOperationException()
                 };
                 result = v1.CompareTo(v2);
             }
