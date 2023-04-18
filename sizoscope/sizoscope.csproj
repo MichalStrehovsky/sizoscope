@@ -16,6 +16,7 @@
     <PackageProjectUrl>https://github.com/MichalStrehovsky/sizoscope</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <!-- HACK to allow packing as a .NET tool: https://github.com/dotnet/sdk/issues/16361 -->

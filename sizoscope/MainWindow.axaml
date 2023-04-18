@@ -2,12 +2,21 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="using:sizoscope"
+		xmlns:vm="using:sizoscope.ViewModels"
         Width="1280" Height="750"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="800"
         x:Class="sizoscope.MainWindow"
+		x:DataType="vm:MainWindowViewModel"
         Title="sizoscope">
 
 	<Grid>
-		<TextBlock>hello</TextBlock>
+		<TreeView ItemsSource="{Binding Items}">
+			<TreeView.ItemTemplate>
+				<TreeDataTemplate ItemsSource="{Binding Nodes}">
+					<TextBlock Text="{Binding Name}" />
+				</TreeDataTemplate>
+			</TreeView.ItemTemplate>
+		</TreeView>
 	</Grid>
 </Window>

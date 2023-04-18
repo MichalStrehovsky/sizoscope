@@ -1,20 +1,18 @@
-﻿using System.Collections;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using static MstatData;
 
 namespace sizoscope
 {
-    internal sealed class TreeNode : INotifyPropertyChanged
+    public sealed class TreeNode : INotifyPropertyChanged
     {
         private string? name;
         private int imageIndex;
+        private bool expaneded;
 
         public event PropertyChangedEventHandler? PropertyChanged;
-
-        public TreeNode() { }
 
         public TreeNode(string? name, int imageIndex)
         {
@@ -22,16 +20,17 @@ namespace sizoscope
             ImageIndex = imageIndex;
         }
 
-        public TreeNode(string? name, int imageIndex, TreeNodeCollection nodes)
-        {
-            Name = name;
-            ImageIndex = imageIndex;
-            Nodes = nodes;
-        }
-
         public string? Name
         {
-            get => name;
+            get
+            {
+                if (!expaneded)
+                {
+                    expaneded = true;
+                    TreeLogic.Expand(this);
+                }
+                return name;
+            }
             set
             {
                 name = value;
@@ -51,75 +50,16 @@ namespace sizoscope
 
         public object? Tag { get; set; }
 
-        public TreeNode FirstNode => Nodes.First();
+        public TreeNode? FirstNode => Nodes.FirstOrDefault();
 
-        public TreeNodeCollection Nodes { get; } = new TreeNodeCollection();
-        public void BeginUpdate() => Nodes.BeginUpdate();
-        public void EndUpdate() => Nodes.EndUpdate();
+        public ObservableCollection<TreeNode> Nodes { get; } = new();
     }
 
-    internal sealed class TreeNodeCollection : IList<TreeNode>, INotifyCollectionChanged
+    public class TreeLogic
     {
-        private readonly ObservableCollection<TreeNode> nodes = new();
-        private bool isUpdating;
-
-        public TreeNode this[int index] { get => nodes[index]; set => nodes[index] = value; }
-
-        public int Count => nodes.Count;
-
-        public bool IsReadOnly => false;
-
-        public event NotifyCollectionChangedEventHandler? CollectionChanged;
-
-        public TreeNodeCollection()
+        public static void RefreshTree(ObservableCollection<TreeNode> items, MstatData data, Sorter sorter)
         {
-            nodes.CollectionChanged += InnerCollectionChanged;
-        }
-
-        private void InnerCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (isUpdating) return;
-            CollectionChanged?.Invoke(this, e);
-        }
-
-        public void Add(TreeNode item) => nodes.Add(item);
-
-        public void BeginUpdate()
-        {
-            isUpdating = true;
-        }
-
-        public void EndUpdate()
-        {
-            CollectionChanged?.Invoke(this, new(NotifyCollectionChangedAction.Reset));
-            isUpdating = false;
-        }
-
-        public void Clear() => nodes.Clear();
-
-        public bool Contains(TreeNode item) => nodes.Contains(item);
-
-        public void CopyTo(TreeNode[] array, int arrayIndex) => nodes.CopyTo(array, arrayIndex);
-
-        public IEnumerator<TreeNode> GetEnumerator() => nodes.GetEnumerator();
-
-        public int IndexOf(TreeNode item) => nodes.IndexOf(item);
-
-        public void Insert(int index, TreeNode item) => nodes.Insert(index, item);
-
-        public bool Remove(TreeNode item) => nodes.Remove(item);
-
-        public void RemoveAt(int index) => nodes.RemoveAt(index);
-
-        IEnumerator IEnumerable.GetEnumerator() => nodes.GetEnumerator();
-    }
-
-    internal class TreeLogic
-    {
-        public static void RefreshTree(TreeNode tree, MstatData data, Sorter sorter)
-        {
-            tree.BeginUpdate();
-            tree.Nodes.Clear();
+            items.Clear();
             var asms = data.GetScopes();
             foreach (var asm in sorter.Sort(asms))
             {
@@ -132,20 +72,15 @@ namespace sizoscope
                     continue;
 
                 string name = $"{asm.Name} ({AsFileSize(asm.AggregateSize)})";
-                TreeNode node = new TreeNode(name, 0, new() { new() });
+                TreeNode node = new TreeNode(name, 0);
                 node.Tag = asm;
-                tree.Nodes.Add(node);
+                items.Add(node);
             }
-            tree.EndUpdate();
         }
 
-        public static void BeforeExpand(TreeNode node, Sorter sorter)
+        public static void Expand(TreeNode node)
         {
-            if (node.FirstNode.Tag != null)
-                return;
-
-            node.Nodes.Clear();
-
+            Debug.WriteLine($"Expanding {node.Name}");
             const int instantiationsImageIndex = 4;
 
             if (node.Tag is MstatAssembly asm)
@@ -154,50 +89,46 @@ namespace sizoscope
                     .Where(t => t.Namespace.Length > 0)
                     .GroupBy(t => t.Namespace)
                     .Select(g => (Name: g.Key, AggregateSize: g.Sum(t => t.AggregateSize)));
-                foreach (var ns in sorter.Sort(namespacesAndSizes))
+                foreach (var ns in namespacesAndSizes)
                 {
                     string name = $"{ns.Name} ({AsFileSize(ns.AggregateSize)})";
-                    var newNode = new TreeNode(name, 1, new() { new() });
+                    var newNode = new TreeNode(name, 1);
                     newNode.Tag = (asm, ns.Name);
                     node.Nodes.Add(newNode);
                 }
 
-                AppendTypes(sorter, node, asm.GetTypes(), d => d.Namespace.Length == 0);
+                AppendTypes(node, asm.GetTypes(), d => d.Namespace.Length == 0);
             }
             else if (node.Tag is (MstatAssembly a, string ns))
             {
-                AppendTypes(sorter, node, a.GetTypes(), d => d.Namespace == ns);
+                AppendTypes(node, a.GetTypes(), d => d.Namespace == ns);
             }
             else if (node.Tag is MstatTypeDefinition genericDef && node.ImageIndex == instantiationsImageIndex)
             {
-                foreach (var inst in sorter.Sort(genericDef.GetTypeSpecifications()))
+                foreach (var inst in genericDef.GetTypeSpecifications())
                 {
                     string name = $"{inst} ({AsFileSize(inst.AggregateSize)})";
                     var newNode = new TreeNode(name, 2);
                     newNode.Tag = inst;
-
-                    if (inst.GetMembers().MoveNext())
-                        newNode.Nodes.Add(new TreeNode());
 
                     node.Nodes.Add(newNode);
                 }
             }
             else if (node.Tag is MstatTypeSpecification spec)
             {
-                AppendMembers(sorter, node, spec.GetMembers());
+                AppendMembers(node, spec.GetMembers());
             }
             else if (node.Tag is MstatTypeDefinition def)
             {
                 if (def.GetTypeSpecifications().MoveNext())
                 {
                     TreeNode newNode = new TreeNode("Instantiations",
-                        instantiationsImageIndex,
-                        new() { new() });
+                        instantiationsImageIndex);
                     newNode.Tag = def;
                     node.Nodes.Add(newNode);
                 }
-                AppendTypes(sorter, node, def.GetNestedTypes(), x => true);
-                AppendMembers(sorter, node, def.GetMembers());
+                AppendTypes(node, def.GetNestedTypes(), x => true);
+                AppendMembers(node, def.GetMembers());
             }
             else if (node.Tag is MstatMemberDefinition memberDef)
             {
@@ -210,25 +141,23 @@ namespace sizoscope
                 }
             }
 
-            static void AppendTypes(Sorter sorter, TreeNode node, Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope> list, Func<MstatTypeDefinition, bool> filter)
+            static void AppendTypes(TreeNode node, Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope> list, Func<MstatTypeDefinition, bool> filter)
             {
-                foreach (var t in sorter.Sort(list.Where(filter)))
+                foreach (var t in list.Where(filter))
                 {
                     string name = $"{t.Name} ({AsFileSize(t.AggregateSize)})";
-                    var n = new TreeNode(name, 2, new() { new() });
+                    var n = new TreeNode(name, 2);
                     n.Tag = t;
                     node.Nodes.Add(n);
                 }
             }
 
-            static void AppendMembers(Sorter sorter, TreeNode node, Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType> list)
+            static void AppendMembers(TreeNode node, Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType> list)
             {
-                foreach (var t in sorter.Sort(list))
+                foreach (var t in list)
                 {
                     string name = $"{t} ({AsFileSize(t.AggregateSize)})";
                     var n = new TreeNode(name, 3);
-                    if (t.GetInstantiations().Any())
-                        n.Nodes.Add(new TreeNode());
                     n.Tag = t;
                     node.Nodes.Add(n);
                 }
@@ -245,28 +174,28 @@ namespace sizoscope
 
         public class Sorter
         {
-            private readonly string _key;
+            public string Key { get; private set; }
 
-            private Sorter(string key) => _key = key;
+            private Sorter(string key) => Key = key;
 
             public IEnumerable<MstatAssembly> Sort(IEnumerable<MstatAssembly> asms)
-                => _key == "Name" ? asms.OrderBy(a => a.Name) : asms.OrderByDescending(a => a.AggregateSize);
+                => Key == "Name" ? asms.OrderBy(a => a.Name) : asms.OrderByDescending(a => a.AggregateSize);
             public IEnumerable<(string Name, int AggregateSize)> Sort(IEnumerable<(string Name, int AggregateSize)> ns)
-                => _key == "Name" ? ns.OrderBy(n => n.Name) : ns.OrderByDescending(n => n.AggregateSize);
+                => Key == "Name" ? ns.OrderBy(n => n.Name) : ns.OrderByDescending(n => n.AggregateSize);
 
             public IEnumerable<MstatTypeSpecification> Sort(IEnumerable<MstatTypeSpecification> specs)
-                => _key == "Name" ? specs.OrderBy(s => s.ToString()) : specs.OrderByDescending(s => s.AggregateSize);
+                => Key == "Name" ? specs.OrderBy(s => s.ToString()) : specs.OrderByDescending(s => s.AggregateSize);
 
             public IEnumerable<MstatTypeDefinition> Sort(IEnumerable<MstatTypeDefinition> types)
-                => _key == "Name" ? types.OrderBy(t => t.Name) : types.OrderByDescending(t => t.AggregateSize);
+                => Key == "Name" ? types.OrderBy(t => t.Name) : types.OrderByDescending(t => t.AggregateSize);
 
             public IEnumerable<MstatMemberDefinition> Sort(IEnumerable<MstatMemberDefinition> members)
-                => _key == "Name" ? members.OrderBy(t => t.Name) : members.OrderByDescending(t => t.AggregateSize);
+                => Key == "Name" ? members.OrderBy(t => t.Name) : members.OrderByDescending(t => t.AggregateSize);
 
             public static Sorter ByName() => new Sorter("Name");
             public static Sorter BySize() => new Sorter("Size");
 
-            public override string ToString() => $"Sort by {_key}";
+            public override string ToString() => $"Sort by {Key}";
         }
     }
 }
