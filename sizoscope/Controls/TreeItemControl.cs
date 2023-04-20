@@ -16,7 +16,7 @@ public class TreeItemControl : TemplatedControl
     private const string pcInstantiation = ":instantiation";
 
     public static readonly StyledProperty<string?> TextProperty = AvaloniaProperty.Register<TreeItemControl, string?>(nameof(Text));
-    public static readonly StyledProperty<NodeType> TypeProperty = AvaloniaProperty.Register<TreeItemControl, NodeType>(nameof(Type));
+    public static readonly StyledProperty<NodeType?> TypeProperty = AvaloniaProperty.Register<TreeItemControl, NodeType?>(nameof(Type));
     public static readonly StyledProperty<IImage?> ImageProperty = AvaloniaProperty.Register<TreeItemControl, IImage?>(nameof(Image));
 
     private IImage? Image
@@ -31,13 +31,13 @@ public class TreeItemControl : TemplatedControl
         set => SetValue(TextProperty, value);
     }
 
-    public NodeType Type
+    public NodeType? Type
     {
         get => GetValue(TypeProperty);
         set => SetValue(TypeProperty, value);
     }
 
-    private void SetPseudoClasses(NodeType type)
+    private void SetPseudoClasses(NodeType? type)
     {
         PseudoClasses.Set(pcAssembly, type is NodeType.Assembly);
         PseudoClasses.Set(pcNamespace, type is NodeType.Namespace);
@@ -58,7 +58,7 @@ public class TreeItemControl : TemplatedControl
 
         if (change.Property == TypeProperty)
         {
-            SetPseudoClasses(change.GetNewValue<NodeType>());
+            SetPseudoClasses(change.GetNewValue<NodeType?>());
             InvalidateVisual();
         }
     }

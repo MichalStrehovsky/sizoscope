@@ -12,17 +12,17 @@ public class MainWindowViewModel : INotifyPropertyChanged
 {
     public MainWindowViewModel()
     {
-        searchDebouncer = new(TimeSpan.FromMilliseconds(500), DispatcherPriority.Normal, ExecuteSearch);
+        _searchDebouncer = new(TimeSpan.FromMilliseconds(500), DispatcherPriority.Normal, ExecuteSearch);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private MstatData? _data;
-    private string? fileName;
-    private int sortMode;
-    private int searchMode;
-    private string? searchPattern;
-    private readonly DispatcherTimer searchDebouncer;
+    private string? _fileName;
+    private int _sortMode;
+    private int _searchMode;
+    private string? _searchPattern;
+    private readonly DispatcherTimer _searchDebouncer;
 
     public ObservableCollection<TreeNode> Items { get; } = new();
     public ObservableCollection<SearchResultItem> SearchResult { get; } = new();
@@ -37,18 +37,21 @@ public class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public MstatData? CurrentData => _data;
+
     public string? FileName
     {
-        get => fileName;
+        get => _fileName;
         set
         {
-            if (value != fileName)
+            if (value != _fileName)
             {
                 if (value is null || value == FileName) return;
 
-                fileName = value;
+                _fileName = value;
                 PropertyChanged?.Invoke(this, new(nameof(FileName)));
 
+                _data?.Dispose();
                 _data = Read(value);
                 RefreshTree(Items, _data, Sorter);
                 RefreshSearch();
@@ -58,12 +61,12 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
     public int SortMode
     {
-        get => sortMode;
+        get => _sortMode;
         set
         {
-            if (value != sortMode)
+            if (value != _sortMode)
             {
-                sortMode = value;
+                _sortMode = value;
                 PropertyChanged?.Invoke(this, new(nameof(SortMode)));
                 PropertyChanged?.Invoke(this, new(nameof(Sorter)));
                 if (_data is not null)
@@ -76,12 +79,12 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
     public int SearchMode
     {
-        get => searchMode;
+        get => _searchMode;
         set
         {
-            if (value != searchMode)
+            if (value != _searchMode)
             {
-                searchMode = value;
+                _searchMode = value;
                 PropertyChanged?.Invoke(this, new(nameof(SearchMode)));
                 RefreshSearch();
             }
@@ -90,35 +93,35 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
     public string? SearchPattern
     {
-        get => searchPattern;
+        get => _searchPattern;
         set
         {
-            if (value != searchPattern)
+            if (value != _searchPattern)
             {
-                searchPattern = value;
+                _searchPattern = value;
                 PropertyChanged?.Invoke(this, new(nameof(SearchPattern)));
-                searchDebouncer.Stop();
-                searchDebouncer.Start();
+                _searchDebouncer.Stop();
+                _searchDebouncer.Start();
             }
         }
     }
 
     private void ExecuteSearch(object? sender, EventArgs args)
     {
-        searchDebouncer.Stop();
+        _searchDebouncer.Stop();
         RefreshSearch();
     }
 
     private void RefreshSearch()
     {
-        if (searchPattern is null || _data is null)
+        if (_searchPattern is null || _data is null)
         {
             return;
         }
 
         SearchResult.Clear();
 
-        if (searchPattern.Length > 0)
+        if (_searchPattern.Length > 0)
         {
             foreach (var asm in _data.GetScopes())
             {
@@ -133,7 +136,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
         {
             foreach (var t in types)
             {
-                if (t.Name.Contains(searchPattern) || t.Namespace.Contains(searchPattern))
+                if (t.Name.Contains(_searchPattern) || t.Namespace.Contains(_searchPattern))
                 {
                     var newItem = new SearchResultItem(t.ToString(), t.Size, t.AggregateSize);
 
@@ -144,7 +147,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
                 AddTypes(t.GetNestedTypes());
 
-                if (searchMode is 0 or 2)
+                if (_searchMode is 0 or 2)
                     AddMembers(t.GetMembers());
             }
         }
@@ -153,7 +156,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
         {
             foreach (var m in members)
             {
-                if (m.Name.Contains(searchPattern))
+                if (m.Name.Contains(_searchPattern))
                 {
                     var newItem = new SearchResultItem(m.ToString(), m.Size, m.AggregateSize);
 
@@ -173,14 +176,14 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
         public int Compare(object? x, object? y)
         {
-            var i1 = (ListViewItem)x!;
-            var i2 = (ListViewItem)y!;
+            var i1 = (SearchResultItem)x!;
+            var i2 = (SearchResultItem)y!;
 
             int result;
             if (SortColumn == 0)
             {
-                string? s1 = i1.Tag.ToString();
-                string? s2 = i2.Tag.ToString();
+                string? s1 = i1.Tag?.ToString();
+                string? s2 = i2.Tag?.ToString();
                 result = string.Compare(s1, s2);
             }
             else
@@ -207,9 +210,4 @@ public class MainWindowViewModel : INotifyPropertyChanged
             return InvertSort ? -result : result;
         }
     }
-}
-
-internal class ListViewItem
-{
-    public object Tag { get; set; } = default!;
 }

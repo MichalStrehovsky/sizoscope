@@ -51,7 +51,10 @@ partial class MstatData
         public MethodSpecificationHandle MoveNext(MstatData data, MethodSpecificationHandle current) => data.GetRowCache(current).NextMethodSpec;
     }
 
-    public struct Enumerator<THandle, TRecord, TNext> : IEnumerable<TRecord>, IEnumerator<TRecord> where TNext : struct, ICanMoveNext<THandle, TRecord>
+    public struct Enumerator<THandle, TRecord, TNext> : IEnumerable<TRecord>, IEnumerator<TRecord>
+        where THandle : struct
+        where TRecord : struct
+        where TNext : struct, ICanMoveNext<THandle, TRecord>
     {
         private readonly MstatData _data;
         private readonly THandle _first;

@@ -8,12 +8,12 @@ namespace sizoscope
     public sealed class TreeNode : INotifyPropertyChanged
     {
         private string? name;
-        private NodeType type;
+        private NodeType? type;
         private bool expaneded;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public TreeNode(string? name, NodeType type, Sorter sorter)
+        public TreeNode(string? name, NodeType? type, Sorter sorter)
         {
             Name = name;
             Type = type;
@@ -38,7 +38,7 @@ namespace sizoscope
             }
         }
 
-        public NodeType Type
+        public NodeType? Type
         {
             get => type;
             set

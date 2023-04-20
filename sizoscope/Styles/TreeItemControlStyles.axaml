@@ -11,8 +11,8 @@
 		<Setter Property="Template">
 			<ControlTemplate>
 				<StackPanel Orientation="Horizontal">
-					<Image VerticalAlignment="Center" Source="{TemplateBinding Image}" />
-					<Border Margin="4,0,0,0" ToolTip.Tip="{TemplateBinding Text}">
+					<Image VerticalAlignment="Center" Source="{TemplateBinding Image}" IsVisible="{TemplateBinding Type, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,4,0" />
+					<Border ToolTip.Tip="{TemplateBinding Text}">
 						<TextBlock Text="{TemplateBinding Text}" />
 					</Border>
 				</StackPanel>

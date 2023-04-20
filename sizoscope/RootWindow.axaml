@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:controls="using:sizoscope.Controls"
+		xmlns:vm="using:sizoscope.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="sizoscope.RootWindow"
+		x:DataType="vm:RootWindowViewModel"
+        Title="Root View">
+	<Grid RowDefinitions="Auto, *">
+		<StackPanel Orientation="Horizontal" Margin="8" Grid.Row="0">
+			<TextBlock Text="Path from roots to " />
+			<TextBlock Text="{Binding Name}" />
+		</StackPanel>
+		<TreeView ItemsSource="{Binding Items}" Grid.Row="1">
+			<TreeView.ItemTemplate>
+				<TreeDataTemplate ItemsSource="{Binding Nodes}">
+					<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
+				</TreeDataTemplate>
+			</TreeView.ItemTemplate>
+		</TreeView>
+	</Grid>
+</Window>

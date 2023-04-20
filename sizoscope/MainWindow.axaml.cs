@@ -12,6 +12,8 @@ using sizoscope.ViewModels;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using FluentAvalonia.UI.Controls;
+using Avalonia.Input;
+using static MstatData;
 
 namespace sizoscope;
 
@@ -22,14 +24,38 @@ public partial class MainWindow : AppWindow
     public MainWindow()
     {
         InitializeComponent();
-        MinWidth = 450;
-        MinHeight = 400;
-
         TitleBar.TitleBarHitTestType = TitleBarHitTestType.Complex;
-
         Application.Current!.ActualThemeVariantChanged += ApplicationActualThemeVariantChanged;
+        DataContext = viewModel;
 
-        this.DataContext = viewModel;
+        AddHandler(DragDrop.DragOverEvent, DragOver);
+        AddHandler(DragDrop.DropEvent, Drop);
+    }
+
+    void DragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects &= DragDropEffects.Copy;
+        if (!e.Data.Contains(DataFormats.Files) || e.Data.GetFiles()?.FirstOrDefault() is not IStorageFile)
+            e.DragEffects = DragDropEffects.None;
+    }
+
+    private void Drop(object? sender, DragEventArgs e)
+    {
+        e.DragEffects &= DragDropEffects.Copy;
+        if (e.Data.Contains(DataFormats.Files))
+        {
+            var files = e.Data.GetFiles();
+            if (e.Data.GetFiles()?.FirstOrDefault() is IStorageFile file)
+            {
+                viewModel.FileName = file.TryGetLocalPath() ?? throw new InvalidOperationException();
+            }
+        }
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        base.OnClosing(e);
+        Application.Current!.ActualThemeVariantChanged -= ApplicationActualThemeVariantChanged;
     }
 
     private void ApplicationActualThemeVariantChanged(object? sender, EventArgs e)
@@ -105,6 +131,37 @@ public partial class MainWindow : AppWindow
         }
     }
 
+    public async void Diff_Clicked(object? sender, RoutedEventArgs args)
+    {
+        var currentData = viewModel.CurrentData;
+        if (currentData is null)
+        {
+            var dialog = new ContentDialog
+            {
+                CloseButtonText = "OK",
+                Title = "Error",
+                Content = "You haven't open any file as the baseline."
+            };
+            await dialog.ShowAsync();
+            return;
+        }
+
+        var result = await StorageProvider.OpenFilePickerAsync(new()
+        {
+            AllowMultiple = false,
+            FileTypeFilter = new[] {
+                new FilePickerFileType("Mstat files") { Patterns = new[] { "*.mstat" } },
+                new FilePickerFileType("All files") { Patterns = new[] { "*.*" } }
+            },
+            Title = "Open a file for compare"
+        });
+        if (result.Any())
+        {
+            using var mstaDataToCompare = Read(result.First().TryGetLocalPath() ?? throw new InvalidOperationException());
+            await new DiffWindow(currentData, mstaDataToCompare).ShowDialog(this);
+        }
+    }
+
     public void Refresh_Clicked(object? sender, RoutedEventArgs args)
     {
         viewModel.Refresh();
@@ -113,6 +170,52 @@ public partial class MainWindow : AppWindow
     public void Exit_Clicked(object? sender, RoutedEventArgs args)
     {
         Environment.Exit(0);
+    }
+
+    private async void Tree_DoubleTapped(object? sender, TappedEventArgs args)
+    {
+        if (sender is not TreeView treeView || treeView.SelectedItem is not TreeNode tn) return;
+        var currentData = viewModel.CurrentData;
+        if (currentData is null) return;
+
+        int? id = tn.Tag switch
+        {
+            MstatTypeDefinition typedef => typedef.NodeId,
+            MstatTypeSpecification typespec => typespec.NodeId,
+            MstatMemberDefinition memberdef => memberdef.NodeId,
+            MstatMethodSpecification methodspec => methodspec.NodeId,
+            _ => null
+        };
+
+        if (id.HasValue)
+        {
+            if (id.Value < 0)
+            {
+                var dialog = new ContentDialog
+                {
+                    CloseButtonText = "OK",
+                    Title = "Error",
+                    Content = "Dependency graph information is only available in .NET 8 Preview 4 or later."
+                };
+                await dialog.ShowAsync();
+                return;
+            }
+
+            var node = currentData.GetNodeForId(id.Value);
+            if (node == null)
+            {
+                var dialog = new ContentDialog
+                {
+                    CloseButtonText = "OK",
+                    Title = "Error",
+                    Content = "Unable to load dependency graph. Was IlcGenerateDgmlLog=true specified?"
+                };
+                await dialog.ShowAsync();
+                return;
+            }
+
+            await new RootWindow(node).ShowDialog(this);
+        }
     }
 
     public async void ThirdParty_Clicked(object? sender, RoutedEventArgs args)

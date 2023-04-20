@@ -6,21 +6,21 @@
 		xmlns:vm="using:sizoscope.ViewModels"
 		xmlns:controls="using:sizoscope.Controls"
 		xmlns:conv="using:sizoscope.Converters"
-        Width="800" Height="400"
+        MinWidth="720" MinHeight="200"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
         x:Class="sizoscope.MainWindow"
 		x:DataType="vm:MainWindowViewModel"
         Title="Sizoscope">
 
 	<Grid ColumnDefinitions="*,Auto,*">
-		<Grid RowDefinitions="Auto,*" Grid.Column="0">
+		<Grid RowDefinitions="Auto,*" Grid.Column="0" DragDrop.AllowDrop="True">
 			<Menu Grid.Row="0">
 				<MenuItem Header="File">
 					<MenuItem Header="Open..." Click="Open_Clicked" />
 					<MenuItem Header="Exit" Click="Exit_Clicked" />
 				</MenuItem>
 				<MenuItem Header="Tools">
-					<MenuItem Header="Diff..." />
+					<MenuItem Header="Diff..." Click="Diff_Clicked" />
 				</MenuItem>
 				<MenuItem Header="Help">
 					<MenuItem Header="Third party notices" Click="ThirdParty_Clicked" />
@@ -38,7 +38,7 @@
 					</Button>
 				</Border>
 			</Grid>
-			<TreeView ItemsSource="{Binding Items}" Grid.Row="1" IsVisible="{Binding FileName, Converter={x:Static StringConverters.IsNotNullOrEmpty},Mode=OneWay}">
+			<TreeView ItemsSource="{Binding Items}" DoubleTapped="Tree_DoubleTapped" Grid.Row="1" IsVisible="{Binding FileName, Converter={x:Static StringConverters.IsNotNullOrEmpty},Mode=OneWay}">
 				<TreeView.ItemTemplate>
 					<TreeDataTemplate ItemsSource="{Binding Nodes}">
 						<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
@@ -46,7 +46,7 @@
 				</TreeView.ItemTemplate>
 			</TreeView>
 			<Grid Grid.Row="1" IsVisible="{Binding FileName, Converter={x:Static StringConverters.IsNullOrEmpty},Mode=OneWay}">
-				<StackPanel Margin="0,-80,0,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+				<StackPanel Margin="0,-40,0,0" HorizontalAlignment="Center" VerticalAlignment="Center">
 					<TextBlock FontSize="24" Text="Welcome" HorizontalAlignment="Center" />
 					<Button Margin="0,8,0,0" Content="Open a file to continue..." Click="Open_Clicked" HorizontalAlignment="Center" />
 				</StackPanel>

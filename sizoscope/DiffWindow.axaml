@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:controls="using:sizoscope.Controls"
+		xmlns:vm="using:sizoscope.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="sizoscope.DiffWindow"
+		x:DataType="vm:DiffWindowViewModel"
+        Title="Diff View">
+	<Grid ColumnDefinitions="*,Auto,*">
+		<Grid RowDefinitions="Auto,*" Grid.Column="0" Margin="8">
+			<TextBlock Text="Only in baseline:" Grid.Row="0" />
+			<TreeView ItemsSource="{Binding BaselineItems}" DoubleTapped="Tree_DoubleTapped" Margin="0,8" Grid.Row="1">
+				<TreeView.ItemTemplate>
+					<TreeDataTemplate ItemsSource="{Binding Nodes}">
+						<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
+					</TreeDataTemplate>
+				</TreeView.ItemTemplate>
+			</TreeView>
+		</Grid>
+		<GridSplitter Grid.Column="1" />
+		<Grid RowDefinitions="Auto,*" Grid.Column="2" Margin="8">
+			<TextBlock Text="Only in compare:" Grid.Row="0" />
+			<TreeView ItemsSource="{Binding CompareItems}" DoubleTapped="Tree_DoubleTapped" Margin="0,8" Grid.Row="1">
+				<TreeView.ItemTemplate>
+					<TreeDataTemplate ItemsSource="{Binding Nodes}">
+						<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
+					</TreeDataTemplate>
+				</TreeView.ItemTemplate>
+			</TreeView>
+		</Grid>
+	</Grid>
+</Window>
