@@ -1,5 +1,4 @@
-﻿using Avalonia.Media;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using static sizoscope.TreeLogic;
 

@@ -1,5 +1,4 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using Avalonia;

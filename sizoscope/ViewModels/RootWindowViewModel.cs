@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Xml.Linq;
 
 namespace sizoscope.ViewModels;
 
@@ -16,7 +15,7 @@ public class RootWindowViewModel
 
     private TreeNode CreateTree(MstatData.Node node, string? label = null)
     {
-        TreeNode result = new TreeNode(label is null ? node.Name : $"({label}) {node.Name}", null, TreeLogic.Sorter.ByName());
+        TreeNode result = new TreeNode(label is null ? node.Name : $"({label}) {node.Name}", null, TreeLogic.Sorter.ByDefault());
         foreach (var edge in node.Edges)
             result.Nodes.Add(CreateTree(edge.Node, edge.Label));
 

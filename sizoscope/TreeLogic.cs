@@ -124,21 +124,47 @@ namespace sizoscope
             private Sorter(string key) => Key = key;
 
             public IEnumerable<MstatAssembly> Sort(IEnumerable<MstatAssembly> asms)
-                => Key == "Name" ? asms.OrderBy(a => a.Name) : asms.OrderByDescending(a => a.AggregateSize);
+                => Key switch
+                {
+                    "Name" => asms.OrderBy(a => a.Name),
+                    "Size" => asms.OrderByDescending(a => a.AggregateSize),
+                    _ => asms
+                };
             public IEnumerable<(string Name, int AggregateSize)> Sort(IEnumerable<(string Name, int AggregateSize)> ns)
-                => Key == "Name" ? ns.OrderBy(n => n.Name) : ns.OrderByDescending(n => n.AggregateSize);
+                => Key switch
+                {
+                    "Name" => ns.OrderBy(n => n.Name),
+                    "Size" => ns.OrderByDescending(n => n.AggregateSize),
+                    _ => ns
+                };
 
             public IEnumerable<MstatTypeSpecification> Sort(IEnumerable<MstatTypeSpecification> specs)
-                => Key == "Name" ? specs.OrderBy(s => s.ToString()) : specs.OrderByDescending(s => s.AggregateSize);
+                => Key switch
+                {
+                    "Name" => specs.OrderBy(s => s.ToString()),
+                    "Size" => specs.OrderByDescending(s => s.AggregateSize),
+                    _ => specs
+                };
 
             public IEnumerable<MstatTypeDefinition> Sort(IEnumerable<MstatTypeDefinition> types)
-                => Key == "Name" ? types.OrderBy(t => t.Name) : types.OrderByDescending(t => t.AggregateSize);
+                => Key switch
+                {
+                    "Name" => types.OrderBy(t => t.Name),
+                    "Size" => types.OrderByDescending(t => t.AggregateSize),
+                    _ => types
+                };
 
             public IEnumerable<MstatMemberDefinition> Sort(IEnumerable<MstatMemberDefinition> members)
-                => Key == "Name" ? members.OrderBy(t => t.Name) : members.OrderByDescending(t => t.AggregateSize);
+                => Key switch
+                {
+                    "Name" => members.OrderBy(t => t.Name),
+                    "Size" => members.OrderByDescending(t => t.AggregateSize),
+                    _ => members
+                };
 
             public static Sorter ByName() => new Sorter("Name");
             public static Sorter BySize() => new Sorter("Size");
+            public static Sorter ByDefault() => new Sorter("Default");
 
             public override string ToString() => $"Sort by {Key}";
         }
