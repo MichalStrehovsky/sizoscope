@@ -1,63 +1,9 @@
 ﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Reflection.Metadata;
 using static MstatData;
-using static sizoscope.TreeLogic;
 
 namespace sizoscope
 {
-    public sealed class TreeNode : INotifyPropertyChanged
-    {
-        private string? name;
-        private int imageIndex;
-        private bool expaneded;
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public TreeNode(string? name, int imageIndex, TreeLogic.Sorter sorter)
-        {
-            Name = name;
-            ImageIndex = imageIndex;
-            Sorter = sorter;
-        }
-
-        public string? Name
-        {
-            get
-            {
-                if (!expaneded)
-                {
-                    expaneded = true;
-                    TreeLogic.Expand(this);
-                }
-                return name;
-            }
-            set
-            {
-                name = value;
-                PropertyChanged?.Invoke(value, new(nameof(Name)));
-            }
-        }
-
-        public int ImageIndex
-        {
-            get => imageIndex;
-            set
-            {
-                imageIndex = value;
-                PropertyChanged?.Invoke(this, new(nameof(ImageIndex)));
-            }
-        }
-
-        public object? Tag { get; set; }
-
-        public TreeNode? FirstNode => Nodes.FirstOrDefault();
-
-        public ObservableCollection<TreeNode> Nodes { get; } = new();
-
-        public Sorter Sorter { get; }
-    }
-
     public class TreeLogic
     {
         public static void RefreshTree(ObservableCollection<TreeNode> items, MstatData data, Sorter sorter)
@@ -83,8 +29,6 @@ namespace sizoscope
 
         public static void Expand(TreeNode node)
         {
-            const int instantiationsImageIndex = 4;
-
             if (node.Tag is MstatAssembly asm)
             {
                 var namespacesAndSizes = asm.GetTypes()
@@ -94,7 +38,7 @@ namespace sizoscope
                 foreach (var ns in node.Sorter.Sort(namespacesAndSizes))
                 {
                     string name = $"{ns.Name} ({AsFileSize(ns.AggregateSize)})";
-                    var newNode = new TreeNode(name, 1, node.Sorter);
+                    var newNode = new TreeNode(name, NodeType.Namespace, node.Sorter);
                     newNode.Tag = (asm, ns.Name);
                     node.Nodes.Add(newNode);
                 }
@@ -105,12 +49,12 @@ namespace sizoscope
             {
                 AppendTypes(node, a.GetTypes(), d => d.Namespace == ns);
             }
-            else if (node.Tag is MstatTypeDefinition genericDef && node.ImageIndex == instantiationsImageIndex)
+            else if (node.Tag is MstatTypeDefinition genericDef && node.Type == NodeType.Instantiation)
             {
                 foreach (var inst in node.Sorter.Sort(genericDef.GetTypeSpecifications()))
                 {
                     string name = $"{inst} ({AsFileSize(inst.AggregateSize)})";
-                    var newNode = new TreeNode(name, 2, node.Sorter);
+                    var newNode = new TreeNode(name, NodeType.Class, node.Sorter);
                     newNode.Tag = inst;
 
                     node.Nodes.Add(newNode);
@@ -124,7 +68,7 @@ namespace sizoscope
             {
                 if (def.GetTypeSpecifications().MoveNext())
                 {
-                    TreeNode newNode = new TreeNode("Instantiations", instantiationsImageIndex, node.Sorter);
+                    TreeNode newNode = new TreeNode("Instantiations", NodeType.Instantiation, node.Sorter);
                     newNode.Tag = def;
                     node.Nodes.Add(newNode);
                 }
@@ -136,7 +80,7 @@ namespace sizoscope
                 foreach (var inst in memberDef.GetInstantiations())
                 {
                     string name = $"{inst} ({AsFileSize(inst.Size)})";
-                    var newNode = new TreeNode(name, 3, node.Sorter);
+                    var newNode = new TreeNode(name, NodeType.Method, node.Sorter);
                     newNode.Tag = inst;
                     node.Nodes.Add(newNode);
                 }
@@ -147,7 +91,7 @@ namespace sizoscope
                 foreach (var t in node.Sorter.Sort(list.Where(filter)))
                 {
                     string name = $"{t.Name} ({AsFileSize(t.AggregateSize)})";
-                    var n = new TreeNode(name, 2, node.Sorter);
+                    var n = new TreeNode(name, NodeType.Class, node.Sorter);
                     n.Tag = t;
                     node.Nodes.Add(n);
                 }
@@ -158,7 +102,7 @@ namespace sizoscope
                 foreach (var t in node.Sorter.Sort(list))
                 {
                     string name = $"{t} ({AsFileSize(t.AggregateSize)})";
-                    var n = new TreeNode(name, 3, node.Sorter);
+                    var n = new TreeNode(name, NodeType.Method, node.Sorter);
                     n.Tag = t;
                     node.Nodes.Add(n);
                 }

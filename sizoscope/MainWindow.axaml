@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="using:sizoscope"
 		xmlns:vm="using:sizoscope.ViewModels"
-		xmlns:controls="using:FluentAvalonia.UI.Controls"
+		xmlns:controls="using:sizoscope.Controls"
 		xmlns:conv="using:sizoscope.Converters"
         Width="800" Height="400"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
@@ -41,9 +41,7 @@
 			<TreeView ItemsSource="{Binding Items}" Grid.Row="1" IsVisible="{Binding FileName, Converter={x:Static StringConverters.IsNotNullOrEmpty},Mode=OneWay}">
 				<TreeView.ItemTemplate>
 					<TreeDataTemplate ItemsSource="{Binding Nodes}">
-						<Border ToolTip.Tip="{Binding Name}">
-							<TextBlock Text="{Binding Name}" />
-						</Border>
+						<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
 					</TreeDataTemplate>
 				</TreeView.ItemTemplate>
 			</TreeView>

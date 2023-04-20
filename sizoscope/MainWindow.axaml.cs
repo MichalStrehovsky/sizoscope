@@ -88,11 +88,6 @@ public partial class MainWindow : AppWindow
         }
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
     public async void Open_Clicked(object? sender, RoutedEventArgs args)
     {
         var result = await StorageProvider.OpenFilePickerAsync(new()

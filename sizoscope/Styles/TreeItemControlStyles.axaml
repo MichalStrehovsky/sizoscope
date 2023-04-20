@@ -1,0 +1,38 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:controls="using:sizoscope.Controls">
+	<Design.PreviewWith>
+		<Border Padding="0" Height="24" Width="100">
+			<controls:TreeItemControl Type="2" Text="Test" />
+		</Border>
+	</Design.PreviewWith>
+
+	<Style Selector="controls|TreeItemControl">
+		<Setter Property="Template">
+			<ControlTemplate>
+				<StackPanel Orientation="Horizontal">
+					<Image VerticalAlignment="Center" Source="{TemplateBinding Image}" />
+					<Border Margin="4,0,0,0" ToolTip.Tip="{TemplateBinding Text}">
+						<TextBlock Text="{TemplateBinding Text}" />
+					</Border>
+				</StackPanel>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="controls|TreeItemControl:assembly">
+		<Setter Property="Image" Value="/Assets/Assembly.png" />
+	</Style>
+	<Style Selector="controls|TreeItemControl:namespace">
+		<Setter Property="Image" Value="/Assets/Namespace.png" />
+	</Style>
+	<Style Selector="controls|TreeItemControl:class">
+		<Setter Property="Image" Value="/Assets/Class.png" />
+	</Style>
+	<Style Selector="controls|TreeItemControl:method">
+		<Setter Property="Image" Value="/Assets/Method.png" />
+	</Style>
+	<Style Selector="controls|TreeItemControl:instantiation">
+		<Setter Property="Image" Value="/Assets/Instantiation.png" />
+	</Style>
+</Styles>

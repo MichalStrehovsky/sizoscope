@@ -6,6 +6,7 @@
              xmlns:sty="using:FluentAvalonia.Styling">
 	<Application.Styles>
 		<sty:FluentAvaloniaTheme PreferUserAccentColor="True" PreferSystemTheme="True" />
+		<StyleInclude Source="/Styles/Controls.axaml" />
 	</Application.Styles>
 
 </Application>
