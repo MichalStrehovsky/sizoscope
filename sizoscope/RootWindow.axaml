@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:controls="using:sizoscope.Controls"
 		xmlns:vm="using:sizoscope.ViewModels"
+        MinWidth="720" MinHeight="200"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="sizoscope.RootWindow"
 		x:DataType="vm:RootWindowViewModel"
