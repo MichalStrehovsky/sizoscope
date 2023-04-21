@@ -12,6 +12,8 @@ public class DiffWindowViewModel : INotifyPropertyChanged
         var baselineTree = new ObservableCollection<TreeNode>();
         var compareTree = new ObservableCollection<TreeNode>();
         (_baseline, _compare) = MstatData.Diff(baseline, compare);
+        BaselineData = _baseline;
+        CompareData = _compare;
         RefreshTree(baselineTree, _baseline, Sorter.BySize());
         RefreshTree(compareTree, _compare, Sorter.BySize());
         BaselineItems = baselineTree;
@@ -24,6 +26,8 @@ public class DiffWindowViewModel : INotifyPropertyChanged
 
     public ObservableCollection<TreeNode> BaselineItems { get; }
     public ObservableCollection<TreeNode> CompareItems { get; }
+    public MstatData BaselineData { get; }
+    public MstatData CompareData { get; }
 
     public Sorter BaselineSorter => BaselineSortMode is 0 ? Sorter.BySize() : Sorter.ByName();
     public Sorter CompareSorter => CompareSortMode is 0 ? Sorter.BySize() : Sorter.ByName();

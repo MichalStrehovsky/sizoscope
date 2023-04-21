@@ -1,94 +1,65 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Media;
-using Avalonia.Media.Immutable;
-using Avalonia.Styling;
-using FluentAvalonia.Styling;
-using FluentAvalonia.UI.Media;
-using FluentAvalonia.UI.Windowing;
+using FluentAvalonia.UI.Controls;
 using sizoscope.ViewModels;
-using System.Runtime.InteropServices;
+using static MstatData;
 
 namespace sizoscope
 {
-    public partial class DiffWindow : AppWindow
+    public partial class DiffWindow : FluentAppWindow
     {
         private readonly DiffWindowViewModel _viewModel;
         public DiffWindow(MstatData baseline, MstatData compare)
         {
             InitializeComponent();
-            TitleBar.TitleBarHitTestType = TitleBarHitTestType.Complex;
-            Application.Current!.ActualThemeVariantChanged += ApplicationActualThemeVariantChanged;
             _viewModel = new(baseline, compare);
             DataContext = _viewModel;
         }
 
-        protected override void OnClosing(WindowClosingEventArgs e)
+        private async void Tree_DoubleTapped(object? sender, TappedEventArgs args)
         {
-            base.OnClosing(e);
-            Application.Current!.ActualThemeVariantChanged -= ApplicationActualThemeVariantChanged;
-        }
+            if (sender is not TreeView treeView || 
+                treeView.SelectedItem is not TreeNode tn ||
+                treeView.Tag is not MstatData currentData) return;
 
-        private void ApplicationActualThemeVariantChanged(object? sender, EventArgs e)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            int? id = tn.Tag switch
             {
-                if (IsWindows11 && ActualThemeVariant != FluentAvaloniaTheme.HighContrastTheme)
+                MstatTypeDefinition typedef => typedef.NodeId,
+                MstatTypeSpecification typespec => typespec.NodeId,
+                MstatMemberDefinition memberdef => memberdef.NodeId,
+                MstatMethodSpecification methodspec => methodspec.NodeId,
+                _ => null
+            };
+
+            if (id.HasValue)
+            {
+                if (id.Value < 0)
                 {
-                    TryEnableMicaEffect();
+                    var dialog = new ContentDialog
+                    {
+                        CloseButtonText = "OK",
+                        Title = "Error",
+                        Content = "Dependency graph information is only available in .NET 8 Preview 4 or later."
+                    };
+                    await dialog.ShowAsync();
+                    return;
                 }
-                else if (ActualThemeVariant != FluentAvaloniaTheme.HighContrastTheme)
+
+                var node = currentData.GetNodeForId(id.Value);
+                if (node == null)
                 {
-                    SetValue(BackgroundProperty, AvaloniaProperty.UnsetValue);
+                    var dialog = new ContentDialog
+                    {
+                        CloseButtonText = "OK",
+                        Title = "Error",
+                        Content = "Unable to load dependency graph. Was IlcGenerateDgmlLog=true specified?"
+                    };
+                    await dialog.ShowAsync();
+                    return;
                 }
+
+                await new RootWindow(node).ShowDialog(this);
             }
-        }
-
-        protected override void OnOpened(EventArgs e)
-        {
-            base.OnOpened(e);
-
-            var thm = ActualThemeVariant;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                if (IsWindows11 && thm != FluentAvaloniaTheme.HighContrastTheme)
-                {
-                    TransparencyBackgroundFallback = Brushes.Transparent;
-                    TransparencyLevelHint = WindowTransparencyLevel.Mica;
-
-                    TryEnableMicaEffect();
-                }
-            }
-        }
-
-        private void TryEnableMicaEffect()
-        {
-            if (ActualThemeVariant == ThemeVariant.Dark)
-            {
-                var color = this.TryFindResource("SolidBackgroundFillColorBase",
-                    ThemeVariant.Dark, out var value) ? (Color2)(Color)value! : new Color2(32, 32, 32);
-
-                color = color.LightenPercent(-0.8f);
-
-                Background = new ImmutableSolidColorBrush(color, 0.78);
-            }
-            else if (ActualThemeVariant == ThemeVariant.Light)
-            {
-                // Similar effect here
-                var color = this.TryFindResource("SolidBackgroundFillColorBase",
-                    ThemeVariant.Light, out var value) ? (Color2)(Color)value! : new Color2(243, 243, 243);
-
-                color = color.LightenPercent(0.5f);
-
-                Background = new ImmutableSolidColorBrush(color, 0.9);
-            }
-        }
-
-        private void Tree_DoubleTapped(object? sender, TappedEventArgs args)
-        {
-
         }
     }
 }

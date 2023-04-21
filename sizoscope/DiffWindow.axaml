@@ -16,7 +16,7 @@
 				<ComboBoxItem Content="Sort by Size" />
 				<ComboBoxItem Content="Sort by Name" />
 			</ComboBox>
-			<TreeView ItemsSource="{Binding BaselineItems}" DoubleTapped="Tree_DoubleTapped" Margin="0,8" Grid.Row="1">
+			<TreeView ItemsSource="{Binding BaselineItems}" Tag="{Binding BaselineData}" DoubleTapped="Tree_DoubleTapped" Margin="0,8" Grid.Row="1">
 				<TreeView.ItemTemplate>
 					<TreeDataTemplate ItemsSource="{Binding Nodes}">
 						<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
@@ -31,7 +31,7 @@
 				<ComboBoxItem Content="Sort by Size" />
 				<ComboBoxItem Content="Sort by Name" />
 			</ComboBox>
-			<TreeView ItemsSource="{Binding CompareItems}" DoubleTapped="Tree_DoubleTapped" Margin="0,8" Grid.Row="1">
+			<TreeView ItemsSource="{Binding CompareItems}" Tag="{Binding CompareData}" DoubleTapped="Tree_DoubleTapped" Margin="0,8" Grid.Row="1">
 				<TreeView.ItemTemplate>
 					<TreeDataTemplate ItemsSource="{Binding Nodes}">
 						<controls:TreeItemControl Type="{Binding Type}" Text="{Binding Name}" />
