@@ -48,8 +48,11 @@
             _reloadButton = new ToolStripButton();
             _diffButton = new ToolStripButton();
             _findButton = new ToolStripButton();
-            _openFileDialog = new OpenFileDialog();
             _aboutButton = new ToolStripButton();
+            _openFileDialog = new OpenFileDialog();
+            statusStrip1 = new StatusStrip();
+            _toolStripStatusLabel = new ToolStripStatusLabel();
+            toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             toolStripContainer1.ContentPanel.SuspendLayout();
             toolStripContainer1.TopToolStripPanel.SuspendLayout();
             toolStripContainer1.SuspendLayout();
@@ -60,16 +63,21 @@
             tableLayoutPanel1.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
             toolStrip1.SuspendLayout();
+            statusStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // toolStripContainer1
             // 
             // 
+            // toolStripContainer1.BottomToolStripPanel
+            // 
+            toolStripContainer1.BottomToolStripPanel.Controls.Add(statusStrip1);
+            // 
             // toolStripContainer1.ContentPanel
             // 
             toolStripContainer1.ContentPanel.Controls.Add(splitContainer1);
             toolStripContainer1.ContentPanel.Margin = new Padding(3, 2, 3, 2);
-            toolStripContainer1.ContentPanel.Size = new Size(640, 334);
+            toolStripContainer1.ContentPanel.Size = new Size(640, 312);
             toolStripContainer1.Dock = DockStyle.Fill;
             toolStripContainer1.Location = new Point(0, 0);
             toolStripContainer1.Margin = new Padding(3, 2, 3, 2);
@@ -97,7 +105,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(tableLayoutPanel2);
             splitContainer1.Panel2Collapsed = true;
-            splitContainer1.Size = new Size(640, 334);
+            splitContainer1.Size = new Size(640, 312);
             splitContainer1.SplitterDistance = 278;
             splitContainer1.TabIndex = 0;
             // 
@@ -113,7 +121,7 @@
             tableLayoutPanel1.RowCount = 2;
             tableLayoutPanel1.RowStyles.Add(new RowStyle());
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(640, 334);
+            tableLayoutPanel1.Size = new Size(640, 312);
             tableLayoutPanel1.TabIndex = 2;
             // 
             // _sortByComboBox
@@ -138,7 +146,7 @@
             _tree.Margin = new Padding(3, 2, 3, 2);
             _tree.Name = "_tree";
             _tree.SelectedImageIndex = 0;
-            _tree.Size = new Size(634, 303);
+            _tree.Size = new Size(634, 281);
             _tree.TabIndex = 0;
             _tree.BeforeExpand += TreeBeforeExpand;
             _tree.NodeMouseDoubleClick += _tree_NodeMouseDoubleClick;
@@ -230,7 +238,7 @@
             toolStrip1.Items.AddRange(new ToolStripItem[] { _openButton, _reloadButton, _diffButton, _findButton, _aboutButton });
             toolStrip1.Location = new Point(3, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(154, 27);
+            toolStrip1.Size = new Size(123, 27);
             toolStrip1.TabIndex = 0;
             // 
             // _openButton
@@ -276,11 +284,6 @@
             _findButton.Text = "Find (Ctrl-F)";
             _findButton.CheckedChanged += FindButtonClick;
             // 
-            // _openFileDialog
-            // 
-            _openFileDialog.FileName = "openFileDialog1";
-            _openFileDialog.Filter = "Managed statistics|*.mstat";
-            // 
             // _aboutButton
             // 
             _aboutButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
@@ -290,6 +293,27 @@
             _aboutButton.Size = new Size(24, 24);
             _aboutButton.Text = "About...";
             _aboutButton.Click += _aboutButton_Click;
+            // 
+            // _openFileDialog
+            // 
+            _openFileDialog.FileName = "openFileDialog1";
+            _openFileDialog.Filter = "Managed statistics|*.mstat";
+            // 
+            // statusStrip1
+            // 
+            statusStrip1.Dock = DockStyle.None;
+            statusStrip1.Items.AddRange(new ToolStripItem[] { _toolStripStatusLabel });
+            statusStrip1.Location = new Point(0, 0);
+            statusStrip1.Name = "statusStrip1";
+            statusStrip1.Size = new Size(640, 22);
+            statusStrip1.TabIndex = 2;
+            statusStrip1.Text = "statusStrip1";
+            // 
+            // _toolStripStatusLabel
+            // 
+            _toolStripStatusLabel.Name = "_toolStripStatusLabel";
+            _toolStripStatusLabel.Size = new Size(72, 17);
+            _toolStripStatusLabel.Text = "No file open";
             // 
             // MainForm
             // 
@@ -301,6 +325,8 @@
             Margin = new Padding(3, 2, 3, 2);
             Name = "MainForm";
             Text = "Sizoscope";
+            toolStripContainer1.BottomToolStripPanel.ResumeLayout(false);
+            toolStripContainer1.BottomToolStripPanel.PerformLayout();
             toolStripContainer1.ContentPanel.ResumeLayout(false);
             toolStripContainer1.TopToolStripPanel.ResumeLayout(false);
             toolStripContainer1.TopToolStripPanel.PerformLayout();
@@ -315,6 +341,8 @@
             tableLayoutPanel2.PerformLayout();
             toolStrip1.ResumeLayout(false);
             toolStrip1.PerformLayout();
+            statusStrip1.ResumeLayout(false);
+            statusStrip1.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -340,5 +368,7 @@
         private ToolStripButton _findButton;
         internal ImageList _imageList;
         private ToolStripButton _aboutButton;
+        private StatusStrip statusStrip1;
+        private ToolStripStatusLabel _toolStripStatusLabel;
     }
 }

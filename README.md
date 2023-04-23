@@ -51,4 +51,5 @@ In the above screenshot, the reason why the top node was included in the executa
 
 * Passing a MSTAT file name on the command line will launch Sizoscope with the file open. You can associated *.mstat files with Sizoscope in shell.
 * You can drag and drop .mstat files into the UI to open them.
+* Holding Alt when dragging and dropping will open a diff against the open file.
 * MSTAT files are loaded to memory and the associated file system files are closed. This is done on purpose so that you can quickly do before/after comparisons: simply open the MSTAT, make your change to the project and re-publish, and do a diff _against the same file_.

@@ -7,13 +7,13 @@ namespace sizoscope
         private MstatData _leftDiff, _rightDiff;
         private TreeLogic.Sorter _sorter;
 
-        public DiffForm(MstatData leftDiff, MstatData rightDiff)
+        public DiffForm(MstatData leftDiff, MstatData rightDiff, int diffSize)
         {
             InitializeComponent();
 
             _leftDiff = leftDiff;
             _rightDiff = rightDiff;
-            _sorter = TreeLogic.Sorter.ByName();
+            _sorter = TreeLogic.Sorter.BySize();
 
             ImageList imageList = new MainForm()._imageList;
             _leftTree.ImageList = imageList;
@@ -21,6 +21,8 @@ namespace sizoscope
 
             TreeLogic.RefreshTree(_leftTree, _leftDiff, _sorter);
             TreeLogic.RefreshTree(_rightTree, _rightDiff, _sorter);
+
+            _toolStripStatusLabel.Text = $"Total accounted difference: {TreeLogic.AsFileSize(diffSize)}";
         }
 
         private void _leftTree_BeforeExpand(object sender, TreeViewCancelEventArgs e)

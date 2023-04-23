@@ -16,13 +16,12 @@ public partial class MstatData : IDisposable
 
     private readonly TypeReferenceHandle[] _primitiveTypeCodeToTypeRef;
 
-#if DEBUG
     private int _typeSize;
     private int _methodSize;
-#endif
 
     public MetadataReader MetadataReader => _reader;
-
+    public int Size => _typeSize + _methodSize;
+    
     ~MstatData() => Dispose(false);
 
     private unsafe MstatData(byte* peImage, int size)
@@ -184,9 +183,7 @@ public partial class MstatData : IDisposable
             EntityHandle typeToken = reader.ILReadLdToken();
             int size = reader.ILReadI4Constant();
 
-#if DEBUG
             _typeSize += size;
-#endif
 
             int nodeId = -1;
             if (majorVersion >= 2)
@@ -228,9 +225,7 @@ public partial class MstatData : IDisposable
             if (majorVersion >= 2)
                 nodeId = reader.ILReadI4Constant() + RealNodeIdAddend;
 
-#if DEBUG
             _methodSize += size;
-#endif
 
             if (methodToken.Kind == HandleKind.MemberReference)
             {

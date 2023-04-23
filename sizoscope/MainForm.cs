@@ -22,7 +22,7 @@ namespace sizoscope
             _sortByComboBox.Items.Add(TreeLogic.Sorter.ByName());
             _sortByComboBox.SelectedIndex = 0;
 
-            _searchComboBox.SelectedIndex = 0;
+            _searchComboBox.SelectedIndex = 1;
 
             _searchResultsListView.ListViewItemSorter = new SearchResultComparer();
         }
@@ -44,6 +44,8 @@ namespace sizoscope
 
             Text = $"{Path.GetFileName(fileName)} - Sizoscope";
 
+            _toolStripStatusLabel.Text = $"Total accounted size: {TreeLogic.AsFileSize(_data.Size)}";
+
             RefreshViews();
 
             _reloadButton.Enabled = true;
@@ -61,7 +63,9 @@ namespace sizoscope
         private void RefreshViews()
         {
             TreeLogic.RefreshTree(_tree, _data, TreeSorter);
-            RefreshSearch();
+
+            if (_findButton.Checked)
+                RefreshSearch();
         }
 
         private void TreeBeforeExpand(object sender, TreeViewCancelEventArgs e)
@@ -83,7 +87,7 @@ namespace sizoscope
 
                 (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(_data, right);
 
-                new DiffForm(leftDiff, rightDiff).ShowDialog(this);
+                new DiffForm(leftDiff, rightDiff, right.Size - _data.Size).ShowDialog(this);
             }
         }
 
@@ -98,6 +102,8 @@ namespace sizoscope
             if (keyData == (Keys.Control | Keys.F))
             {
                 _findButton.Checked = !_findButton.Checked;
+                if (_findButton.Checked)
+                    RefreshSearch();
                 return true;
             }
 
@@ -118,31 +124,26 @@ namespace sizoscope
 
         private void RefreshSearch()
         {
-            const int MaxSearchResults = 250;
+            var sorter = _searchResultsListView.ListViewItemSorter;
+            _searchResultsListView.ListViewItemSorter = null;
 
             _searchResultsListView.BeginUpdate();
             _searchResultsListView.Items.Clear();
 
-            if (_searchTextBox.Text.Length > 0)
+            foreach (var asm in _data.GetScopes())
             {
-                foreach (var asm in _data.GetScopes())
-                {
-                    if (asm.Name == "System.Private.CompilerGenerated")
-                        continue;
+                if (asm.Name == "System.Private.CompilerGenerated")
+                    continue;
 
-                    AddTypes(this, asm.GetTypes());
-                }
+                AddTypes(this, asm.GetTypes());
             }
 
             static void AddTypes(MainForm form, Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope> types)
             {
                 foreach (var t in types)
                 {
-                    if (form._searchResultsListView.Items.Count >= MaxSearchResults)
-                        return;
-
                     if (form._searchComboBox.SelectedIndex is 0 or 1
-                        && t.Name.Contains(form._searchTextBox.Text) || t.Namespace.Contains(form._searchTextBox.Text))
+                        && (t.Name.Contains(form._searchTextBox.Text) || t.Namespace.Contains(form._searchTextBox.Text)))
                     {
                         var newItem = new ListViewItem(new string[]
                         {
@@ -167,9 +168,6 @@ namespace sizoscope
             {
                 foreach (var m in members)
                 {
-                    if (form._searchResultsListView.Items.Count >= MaxSearchResults)
-                        return;
-
                     if (m.Name.Contains(form._searchTextBox.Text))
                     {
                         var newItem = new ListViewItem(new string[]
@@ -187,6 +185,8 @@ namespace sizoscope
             }
 
             _searchResultsListView.EndUpdate();
+
+            _searchResultsListView.ListViewItemSorter = sorter;
         }
 
         class SearchResultComparer : IComparer
@@ -203,9 +203,9 @@ namespace sizoscope
                 int result;
                 if (SortColumn == 0)
                 {
-                    string s1 = i1.Tag.ToString();
-                    string s2 = i2.Tag.ToString();
-                    result = string.Compare(s1, s2);
+                    string s1 = i1.Text;
+                    string s2 = i2.Text;
+                    result = string.Compare(s1, s2, StringComparison.Ordinal);
                 }
                 else
                 {
@@ -262,7 +262,10 @@ namespace sizoscope
         {
             splitContainer1.Panel2Collapsed = !_findButton.Checked;
             if (_findButton.Checked)
+            {
+                RefreshSearch();
                 _searchTextBox.Focus();
+            }
         }
 
         private void _tree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -303,7 +306,22 @@ namespace sizoscope
         private void _tree_DragDrop(object sender, DragEventArgs e)
         {
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            LoadData(files[0]);
+
+            // Holding alt will open a diff
+            if ((e.KeyState & 32) == 32 && _data != null)
+            {
+                // BeginInvoke so that we don't block the drag source while the modal is open
+                BeginInvoke(() =>
+                {
+                    MstatData right = MstatData.Read(files[0]);
+                    (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(_data, right);
+                    new DiffForm(leftDiff, rightDiff, right.Size - _data.Size).ShowDialog(this);
+                });
+            }
+            else
+            {
+                LoadData(files[0]);
+            }
         }
 
         private void _aboutButton_Click(object sender, EventArgs e)
