@@ -124,6 +124,9 @@ namespace sizoscope
 
         private void RefreshSearch()
         {
+            if (_data == null)
+                return;
+
             var sorter = _searchResultsListView.ListViewItemSorter;
             _searchResultsListView.ListViewItemSorter = null;
 
@@ -254,8 +257,7 @@ namespace sizoscope
 
         private void _searchComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_data != null)
-                RefreshSearch();
+            RefreshSearch();
         }
 
         private void FindButtonClick(object sender, EventArgs e)
