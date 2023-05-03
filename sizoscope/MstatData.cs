@@ -436,10 +436,11 @@ public partial class MstatData : IDisposable
                     if (reader.ReadSignatureHeader().IsGeneric)
                         for (int i = reader.ReadCompressedInteger(); i > 0; i--)
                             FormatName(sb, ref reader, default); // yolo
+                    int numParams = reader.ReadCompressedInteger();
                     FormatName(sb, ref reader, default);
                     sb.Append("(*)");
                     sb.Append('(');
-                    for (int i = reader.ReadCompressedInteger(); i > 0; i--)
+                    for (int i = numParams; i > 0; i--)
                         FormatName(sb, ref reader, default);
                     sb.Append(')');
                     break;

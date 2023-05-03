@@ -129,11 +129,21 @@ partial class MstatData
                 SignatureTypeCode.GenericTypeInstance => GetDeclaringTypeReference(data, reader),
                 SignatureTypeCode.SZArray or SignatureTypeCode.Array or SignatureTypeCode.Pointer or SignatureTypeCode.ByReference => GetDeclaringTypeReference(data, reader),
                 SignatureTypeCode.TypeHandle => (TypeReferenceHandle)reader.ReadTypeHandle(),
+                SignatureTypeCode.FunctionPointer => GetDeclaringTypeReferenceForFunctionPointer(data, reader),
 
                 <= SignatureTypeCode.String or SignatureTypeCode.Object or (>= SignatureTypeCode.TypedReference and <= SignatureTypeCode.UIntPtr) => data.GetTypeReferenceForSignatureTypeCode(typeCode),
 
                 _ => throw new Exception($"{typeCode} unexpected"),
             };
+
+            static TypeReferenceHandle GetDeclaringTypeReferenceForFunctionPointer(MstatData data, BlobReader reader)
+            {
+                SignatureHeader header = reader.ReadSignatureHeader();
+                if (header.IsGeneric)
+                    reader.ReadCompressedInteger();
+                reader.ReadCompressedInteger();
+                return GetDeclaringTypeReference(data, reader);
+            }
         }
     }
 
