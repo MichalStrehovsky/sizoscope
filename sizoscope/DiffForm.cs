@@ -62,7 +62,7 @@ namespace sizoscope
                 var node = data.GetNodeForId(id.Value);
                 if (node == null)
                 {
-                    MessageBox.Show("Unable to load dependency graph. Was IlcGenerateDgmlLog=true specified?");
+                    MessageBox.Show("Unable to load dependency graph. Was IlcGenerateDgmlFile=true specified?");
                     return;
                 }
 
