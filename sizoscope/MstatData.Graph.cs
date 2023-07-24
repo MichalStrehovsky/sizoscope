@@ -1,20 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
 partial class MstatData
 {
     private Dictionary<string, Node> _nameToNode;
 
+    public bool DgmlSupported => _version.Major >= 2;
+    public bool DgmlAvailable => DgmlSupported && _nameToNode != null;
+
     public Node GetNodeForId(int id)
     {
-        if (_version.Major < 2 || _nameToNode == null)
+        if (!DgmlAvailable)
             return null;
 
         PEMemoryBlock nameMap = _peReader.GetSectionData(".names");

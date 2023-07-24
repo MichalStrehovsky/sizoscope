@@ -42,6 +42,18 @@ namespace sizoscope
 
         private void NodeMouseDoubleClickCommon(TreeNode treeNode, MstatData data)
         {
+            if (!data.DgmlSupported)
+            {
+                MessageBox.Show("Dependency graph information is only available in .NET 8 Preview 4 or later.");
+                return;
+            }
+
+            if (!data.DgmlAvailable)
+            {
+                MessageBox.Show("Dependency graph data was not found. Ensure IlcGenerateDgmlFile=true is specified.");
+                return;
+            }
+
             int? id = treeNode.Tag switch
             {
                 MstatTypeDefinition typedef => typedef.NodeId,
@@ -55,7 +67,7 @@ namespace sizoscope
             {
                 if (id.Value < 0)
                 {
-                    MessageBox.Show("Dependency graph information is only available in .NET 8 Preview 4 or later.");
+                    MessageBox.Show("This node was not used directly and is included for display purposes only. Try analyzing sub nodes.");
                     return;
                 }
 
