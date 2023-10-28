@@ -18,10 +18,21 @@ public partial class MstatData : IDisposable
 
     private int _typeSize;
     private int _methodSize;
+    private int _fieldSize;
+    private int _unownedFrozenObjectSize;
+    private int _ownedFrozenObjectSize;
+    private int _manifestResourceSize;
 
     public MetadataReader MetadataReader => _reader;
-    public int Size => _typeSize + _methodSize;
-    
+    public int Size => _typeSize
+        + _methodSize
+        + _fieldSize
+        + _unownedFrozenObjectSize
+        + _ownedFrozenObjectSize
+        + _manifestResourceSize;
+
+    public int UnownedFrozenObjectSize => _unownedFrozenObjectSize;
+
     ~MstatData() => Dispose(false);
 
     private unsafe MstatData(byte* peImage, int size)
@@ -121,6 +132,13 @@ public partial class MstatData : IDisposable
         ParseTypes();
         ParseMethods();
 
+        if (_version >= new Version(2, 1))
+        {
+            ParseFrozenObjects();
+            ParseManifestResources();
+            ParseFields();
+        }
+
 #if DEBUG
         static void WalkType(MstatTypeDefinition type, ref int typeSize, ref int methodSize)
         {
@@ -147,13 +165,13 @@ public partial class MstatData : IDisposable
             }
         }
         int typeSize = 0;
-        int methodSize = 0;
+        int memberSize = 0;
         foreach (var asm in GetScopes())
             foreach (var t in asm.GetTypes())
-                WalkType(t, ref typeSize, ref methodSize);
+                WalkType(t, ref typeSize, ref memberSize);
 
         Debug.Assert(typeSize == _typeSize);
-        Debug.Assert(methodSize == _methodSize);
+        Debug.Assert(memberSize == _methodSize + _fieldSize);
 #endif
 
         return this;
@@ -248,6 +266,121 @@ public partial class MstatData : IDisposable
         }
     }
 
+    private void ParseFields()
+    {
+        MethodBodyBlock body = _peReader.GetMethodBody(GetGlobalMethod("RvaFields").RelativeVirtualAddress);
+        BlobReader reader = body.GetILReader();
+
+        while (reader.RemainingBytes > 0)
+        {
+            EntityHandle fieldToken = reader.ILReadLdToken();
+            int size = reader.ILReadI4Constant();
+            int nodeId = reader.ILReadI4Constant() + RealNodeIdAddend;
+
+            _fieldSize += size;
+
+            Debug.Assert(fieldToken.Kind == HandleKind.MemberReference);
+            ref MemberRefRowCache entry = ref GetRowCache((MemberReferenceHandle)fieldToken);
+            entry.NodeId = nodeId;
+            entry.Size = size;
+            entry.AddSize(this, (MemberReferenceHandle)fieldToken, size);
+        }
+    }
+
+    private void ParseFrozenObjects()
+    {
+        MethodBodyBlock body = _peReader.GetMethodBody(GetGlobalMethod("FrozenObjects").RelativeVirtualAddress);
+        BlobReader reader = body.GetILReader();
+
+        var frozenObjectRowCaches = new List<FrozenObjectRowCache>()
+        {
+            default
+        };
+
+        while (reader.RemainingBytes > 0)
+        {
+            FrozenObjectHandle current = (FrozenObjectHandle)frozenObjectRowCaches.Count;
+
+            var entry = new FrozenObjectRowCache()
+            {
+                InstanceType = reader.ILReadLdToken(),
+                Size = reader.ILReadI4Constant(),
+                NodeId = reader.ILReadI4Constant(),
+            };
+            
+            if (reader.ILTryReadLdToken(out EntityHandle owningType))
+            {
+                entry.OwningEntity = owningType;
+
+                if (owningType.Kind == HandleKind.TypeReference)
+                {
+                    ref TypeRefRowCache typeRefCache = ref GetRowCache((TypeReferenceHandle)owningType);
+                    typeRefCache.AddSize(this, (TypeReferenceHandle)owningType, entry.Size);
+                    entry.NextFrozenObject = typeRefCache.FirstFrozenObject;
+                    typeRefCache.FirstFrozenObject = current;
+                }
+                else
+                {
+                    ref TypeSpecRowCache typeSpecCache = ref GetRowCache((TypeSpecificationHandle)owningType);
+                    typeSpecCache.AddSize(this, (TypeSpecificationHandle)owningType, entry.Size);
+                    entry.NextFrozenObject = typeSpecCache.FirstFrozenObject;
+                    typeSpecCache.FirstFrozenObject = current;
+                }
+
+                _ownedFrozenObjectSize += entry.Size;
+            }
+            else
+            {
+                _unownedFrozenObjectSize += entry.Size;
+
+                entry.NextFrozenObject = _firstUnownedFrozenObject;
+                _firstUnownedFrozenObject = current;
+            }
+
+            frozenObjectRowCaches.Add(entry);
+        }
+
+        _frozenObjectCache = frozenObjectRowCaches.ToArray();
+    }
+
+    private void ParseManifestResources()
+    {
+        MethodBodyBlock body = _peReader.GetMethodBody(GetGlobalMethod("ManifestResources").RelativeVirtualAddress);
+        BlobReader reader = body.GetILReader();
+
+        var manifestResourceRowCaches = new List<ManifestResourceRowCache>()
+        {
+            default
+        };
+        
+        while (reader.RemainingBytes > 0)
+        {
+            var asmRefHandle = (AssemblyReferenceHandle)MetadataTokens.Handle(reader.ILReadI4Constant());
+            string name = _reader.GetUserString(reader.ILReadString());
+            int size = reader.ILReadI4Constant();
+
+            ref AssemblyRefRowCache cache = ref GetRowCache(asmRefHandle);
+            cache.AddSize(size);
+
+            ManifestResourceHandle handle = MetadataTokens.ManifestResourceHandle(manifestResourceRowCaches.Count);
+
+            manifestResourceRowCaches.Add(new ManifestResourceRowCache()
+            {
+                Name = name,
+                Size = size,
+                OwningAssembly = asmRefHandle,
+                NextManifestResource = cache.FirstManifestResource,
+            });
+
+            cache.FirstManifestResource = handle;
+
+            _manifestResourceSize += size;
+
+        }
+
+        _manifestResourceCache = manifestResourceRowCaches.ToArray();
+    }
+
     private static readonly string[] s_primitiveNames = new string[]
         {
             "Object", "Void", "Boolean", "Char", "SByte", "Byte",
@@ -283,7 +416,9 @@ public partial class MstatData : IDisposable
             }
             sb.Append('>');
 
-            AppendMethodSignature(sb, reader.GetBlobReader(memberRef.Signature), isGenericDefinition: false);
+            BlobReader blobReader = reader.GetBlobReader(memberRef.Signature);
+            SignatureHeader sigHeader = blobReader.ReadSignatureHeader();
+            AppendMethodSignature(sb, blobReader, sigHeader, isGenericDefinition: false);
 
             return sb;
         }
@@ -294,13 +429,26 @@ public partial class MstatData : IDisposable
             MemberReference memberRef = reader.GetMemberReference(handle);
             string name = _data._memberRefNameCache[MetadataTokens.GetRowNumber(handle)] ?? reader.GetString(memberRef.Name);
             sb.Append(name);
-            AppendMethodSignature(sb, reader.GetBlobReader(memberRef.Signature), isGenericDefinition: true);
+            BlobReader blobReader = reader.GetBlobReader(memberRef.Signature);
+            SignatureHeader sigHeader = blobReader.ReadSignatureHeader();
+
+            if (sigHeader.Kind == SignatureKind.Method)
+            {
+                AppendMethodSignature(sb, blobReader, sigHeader, isGenericDefinition: true);
+            }
+            else
+            {
+                Debug.Assert(sigHeader.Kind == SignatureKind.Field);
+                sb.Append(" : ");
+                FormatName(sb, ref blobReader, default);
+            }
+
             return sb;
         }
 
-        private void AppendMethodSignature(StringBuilder sb, BlobReader reader, bool isGenericDefinition)
+        private void AppendMethodSignature(StringBuilder sb, BlobReader reader, SignatureHeader header, bool isGenericDefinition)
         {
-            SignatureHeader header = reader.ReadSignatureHeader();
+            Debug.Assert(header.Kind == SignatureKind.Method);
 
             if (header.IsGeneric)
             {
@@ -323,6 +471,13 @@ public partial class MstatData : IDisposable
 
             sb.Append(" : ");
             sb.Append(retType);
+        }
+
+        public StringBuilder FormatName(StringBuilder sb, EntityHandle handle, FormatOptions options = FormatOptions.NamespaceQualify)
+        {
+            if (handle.Kind == HandleKind.TypeReference)
+                return FormatName(sb, (TypeReferenceHandle)handle, options);
+            return FormatName(sb, (TypeSpecificationHandle)handle, options);
         }
 
         public StringBuilder FormatName(StringBuilder sb, TypeReferenceHandle handle, FormatOptions options = FormatOptions.NamespaceQualify)
@@ -476,6 +631,26 @@ static class ILReadingExtensions
         if (opcode != ILOpCode.Ldtoken)
             throw Unexpected(opcode);
         return MetadataTokens.EntityHandle(@this.ReadInt32());
+    }
+
+    public static UserStringHandle ILReadString(this ref BlobReader @this)
+    {
+        var opcode = (ILOpCode)@this.ReadByte();
+        if (opcode != ILOpCode.Ldstr)
+            throw Unexpected(opcode);
+        return MetadataTokens.UserStringHandle(@this.ReadInt32());
+    }
+
+    public static bool ILTryReadLdToken(this ref BlobReader @this, out EntityHandle token)
+    {
+        var opcode = (ILOpCode)@this.ReadByte();
+        if (opcode != ILOpCode.Ldtoken)
+        {
+            token = default;
+            return false;
+        }
+        token = MetadataTokens.EntityHandle(@this.ReadInt32());
+        return true;
     }
 
     private static Exception Unexpected(ILOpCode opcode) => new Exception($"Unexpected opcode {opcode}");

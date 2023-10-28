@@ -24,6 +24,12 @@ partial class MstatData
     private readonly MethodSpecRowCache[] _methodSpecCache;
     private readonly AssemblyRefRowCache[] _assemblyRefCache;
 
+    private FrozenObjectHandle _firstUnownedFrozenObject;
+
+    // These are not 1:1 with file format
+    private ManifestResourceRowCache[] _manifestResourceCache;
+    private FrozenObjectRowCache[] _frozenObjectCache;
+
     struct TypeRefRowCache
     {
         public int NodeId;
@@ -34,6 +40,7 @@ partial class MstatData
         public TypeReferenceHandle FirstNestedType;
         public MemberReferenceHandle FirstMember;
         public TypeSpecificationHandle FirstTypeSpec;
+        public FrozenObjectHandle FirstFrozenObject;
         public TypeReferenceHandle NextTypeInScope;
 
         public bool IsInitialized => NodeId != 0;
@@ -88,6 +95,7 @@ partial class MstatData
 
         public TypeSpecificationHandle NextTypeSpec;
         public MemberReferenceHandle FirstMember;
+        public FrozenObjectHandle FirstFrozenObject;
 
         public bool IsInitialized => NodeId != 0;
 
@@ -234,9 +242,31 @@ partial class MstatData
         public int AggregateSize;
 
         public TypeReferenceHandle FirstTypeRef;
+        public ManifestResourceHandle FirstManifestResource;
 
         internal void AddSize(int size) => AggregateSize += size;
     }
+
+    struct ManifestResourceRowCache
+    {
+        public int Size;
+        public string Name;
+        public AssemblyReferenceHandle OwningAssembly;
+
+        public ManifestResourceHandle NextManifestResource;
+    }
+
+    struct FrozenObjectRowCache
+    {
+        public int Size;
+        public int NodeId;
+        public EntityHandle InstanceType;
+        public EntityHandle OwningEntity;
+
+        public FrozenObjectHandle NextFrozenObject;
+    }
+
+    public enum FrozenObjectHandle { }
 
     private ref TypeRefRowCache GetRowCache(TypeReferenceHandle handle)
     {
@@ -279,5 +309,15 @@ partial class MstatData
     private ref AssemblyRefRowCache GetRowCache(AssemblyReferenceHandle handle)
     {
         return ref _assemblyRefCache[MetadataTokens.GetRowNumber(handle)];
+    }
+
+    private ref ManifestResourceRowCache GetRowCache(ManifestResourceHandle handle)
+    {
+        return ref _manifestResourceCache[MetadataTokens.GetRowNumber(handle)];
+    }
+
+    private ref FrozenObjectRowCache GetRowCache(FrozenObjectHandle handle)
+    {
+        return ref _frozenObjectCache[(int)handle];
     }
 }

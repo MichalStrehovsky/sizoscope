@@ -23,6 +23,8 @@ partial class MstatData
             => new Enumerator<TypeSpecificationHandle, MstatTypeSpecification, MoveToNextSpecOfType>(_data, _data.GetRowCache(Handle).FirstTypeSpec);
         public Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType> GetMembers()
             => new Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType>(_data, _data.GetRowCache(Handle).FirstMember);
+        public Enumerator<FrozenObjectHandle, MstatFrozenObject, MoveToNextFrozenObject> GetFrozenObjects()
+            => new Enumerator<FrozenObjectHandle, MstatFrozenObject, MoveToNextFrozenObject>(_data, _data.GetRowCache(Handle).FirstFrozenObject);
 
         public override string ToString() => ToString(FormatOptions.NamespaceQualify);
         public string ToString(FormatOptions options) => _data._formatter.FormatName(new StringBuilder(), Handle, options).ToString();
@@ -71,6 +73,9 @@ partial class MstatData
         public Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType> GetMembers()
             => new Enumerator<MemberReferenceHandle, MstatMemberDefinition, MoveToNextMemberOfType>(_data, _data.GetRowCache(Handle).FirstMember);
 
+        public Enumerator<FrozenObjectHandle, MstatFrozenObject, MoveToNextFrozenObject> GetFrozenObjects()
+            => new Enumerator<FrozenObjectHandle, MstatFrozenObject, MoveToNextFrozenObject>(_data, _data.GetRowCache(Handle).FirstFrozenObject);
+
         public override string ToString() => ToString(FormatOptions.NamespaceQualify);
         public string ToString(FormatOptions options) => _data._formatter.FormatName(new StringBuilder(), Handle, options).ToString();
 
@@ -100,6 +105,16 @@ partial class MstatData
         public int AggregateSize => _data.GetRowCache(Handle).AggregateSize;
         public string Name => _data._memberRefNameCache[MetadataTokens.GetRowNumber(Handle)];
         public int NodeId => _data.GetRowCache(Handle).NodeId - RealNodeIdAddend;
+
+        public bool IsField
+        {
+            get
+            {
+                MemberReference memberRef = _data.MetadataReader.GetMemberReference(Handle);
+                return _data.MetadataReader.GetBlobReader(memberRef.Signature).ReadSignatureHeader().Kind == SignatureKind.Field;
+            }
+        }
+
         public MstatTypeDefinition OwnerAsDef
         {
             get
@@ -213,6 +228,8 @@ partial class MstatData
         private readonly MstatData _data;
         private readonly AssemblyReferenceHandle _handle;
 
+        public AssemblyReferenceHandle Handle => _handle;
+
         public string Name => _data.MetadataReader.GetString(_data.MetadataReader.GetAssemblyReference(_handle).Name);
 
         public MstatAssembly(MstatData data, AssemblyReferenceHandle handle)
@@ -222,6 +239,9 @@ partial class MstatData
 
         public Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope> GetTypes()
             => new Enumerator<TypeReferenceHandle, MstatTypeDefinition, MoveToNextInScope>(_data, _data.GetRowCache(_handle).FirstTypeRef);
+
+        public Enumerator<ManifestResourceHandle, MstatManifestResource, MoveToNextManifestResource> GetManifestResources()
+            => new Enumerator<ManifestResourceHandle, MstatManifestResource, MoveToNextManifestResource>(_data, _data.GetRowCache(_handle).FirstManifestResource);
 
         public override int GetHashCode() => Name.GetHashCode();
 
@@ -233,4 +253,72 @@ partial class MstatData
             return Name == other.Name;
         }
     }
+
+    public struct MstatManifestResource : IEquatable<MstatManifestResource>
+    {
+        private readonly MstatData _data;
+        private readonly ManifestResourceHandle _handle;
+
+        public ManifestResourceHandle Handle => _handle;
+        public string Name => _data.GetRowCache(_handle).Name;
+        public int Size => _data.GetRowCache(_handle).Size;
+        public MstatAssembly Assembly => new MstatAssembly(_data, _data.GetRowCache(_handle).OwningAssembly);
+
+        public MstatManifestResource(MstatData data, ManifestResourceHandle handle)
+            => (_data, _handle) = (data, handle);
+
+        public bool Equals(MstatManifestResource other)
+        {
+            if (_data == other._data)
+                return _handle == other._handle;
+
+            return Assembly.Equals(other.Assembly) &&
+                Name == other.Name;
+        }
+
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
+    }
+
+    public struct MstatFrozenObject : IEquatable<MstatFrozenObject>
+    {
+        private readonly MstatData _data;
+        private readonly FrozenObjectHandle _handle;
+
+        public MstatFrozenObject(MstatData data, FrozenObjectHandle handle)
+            => (_data, _handle) = (data, handle);
+
+        public FrozenObjectHandle Handle => _handle;
+
+        public int Size => _data.GetRowCache(_handle).Size;
+
+        public int NodeId => _data.GetRowCache(_handle).NodeId;
+
+        public EntityHandle OwningEntity => _data.GetRowCache(_handle).OwningEntity;
+
+        public EntityHandle InstanceType => _data.GetRowCache(_handle).InstanceType;
+
+        public override string ToString()
+        {
+            EntityHandle type = _data.GetRowCache(_handle).InstanceType;
+            return _data._formatter.FormatName(new StringBuilder(), type).ToString();
+        }
+
+        public override int GetHashCode()
+        {
+            return _data.GetNameForId(NodeId).GetHashCode();
+        }
+
+        public bool Equals(MstatFrozenObject other)
+        {
+            if (_data == other._data)
+                return NodeId == other.NodeId;
+
+            return this._data.GetNameForId(this.NodeId)
+                == other._data.GetNameForId(other.NodeId);
+        }
+    }
+
 }

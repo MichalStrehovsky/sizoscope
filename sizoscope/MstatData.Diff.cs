@@ -7,8 +7,16 @@ partial class MstatData
     {
         MstatData leftDiff = new MstatData(left._peReader);
         leftDiff._nameToNode = left._nameToNode;
+        if (left._manifestResourceCache != null)
+            leftDiff._manifestResourceCache = new ManifestResourceRowCache[left._manifestResourceCache.Length];
+        if (left._frozenObjectCache != null)
+            leftDiff._frozenObjectCache = new FrozenObjectRowCache[left._frozenObjectCache.Length];
         MstatData rightDiff = new MstatData(right._peReader);
         rightDiff._nameToNode = right._nameToNode;
+        if (right._manifestResourceCache != null)
+            rightDiff._manifestResourceCache = new ManifestResourceRowCache[right._manifestResourceCache.Length];
+        if (right._frozenObjectCache != null)
+            rightDiff._frozenObjectCache = new FrozenObjectRowCache[right._frozenObjectCache.Length];
 
         AddToDiff(left, right, leftDiff);
         AddToDiff(right, left, rightDiff);
@@ -29,6 +37,17 @@ partial class MstatData
             {
                 foreach (MstatTypeDefinition t in leftAsm.GetTypes())
                     AddToDiff(t, result);
+                foreach (MstatManifestResource m in leftAsm.GetManifestResources())
+                    AddToDiff(m, result);
+            }
+        }
+
+        HashSet<MstatFrozenObject> rightFrozenObjs = new HashSet<MstatFrozenObject>(right.GetFrozenObjects());
+        foreach (MstatFrozenObject o in left.GetFrozenObjects())
+        {
+            if (!rightFrozenObjs.Contains(o))
+            {
+                AddToDiff(o, result);
             }
         }
     }
@@ -42,6 +61,13 @@ partial class MstatData
                 AddToDiff(leftType, rightType, result);
             else
                 AddToDiff(leftType, result);
+        }
+
+        HashSet<MstatManifestResource> rightManifestResources = new HashSet<MstatManifestResource>(right.GetManifestResources());
+        foreach (MstatManifestResource leftManifestResource in left.GetManifestResources())
+        {
+            if (!rightManifestResources.Contains(leftManifestResource))
+                AddToDiff(leftManifestResource, result);
         }
     }
 
@@ -73,6 +99,15 @@ partial class MstatData
             else
                 AddToDiff(leftTypeSpec, result);
         }
+
+        HashSet<MstatFrozenObject> rightFrozenObjs = new HashSet<MstatFrozenObject>(right.GetFrozenObjects());
+        foreach (MstatFrozenObject o in left.GetFrozenObjects())
+        {
+            if (!rightFrozenObjs.Contains(o))
+            {
+                AddToDiff(o, result);
+            }
+        }
     }
 
     private static void AddToDiff(MstatMemberDefinition left, MstatMemberDefinition right, MstatData result)
@@ -95,6 +130,15 @@ partial class MstatData
             else
                 AddToDiff(leftMember, result);
         }
+
+        HashSet<MstatFrozenObject> rightFrozenObjs = new HashSet<MstatFrozenObject>(right.GetFrozenObjects());
+        foreach (MstatFrozenObject o in left.GetFrozenObjects())
+        {
+            if (!rightFrozenObjs.Contains(o))
+            {
+                AddToDiff(o, result);
+            }
+        }
     }
 
     private static void AddToDiff(MstatTypeDefinition t, MstatData result)
@@ -112,6 +156,9 @@ partial class MstatData
 
         foreach (MstatMemberDefinition m in t.GetMembers())
             AddToDiff(m, result);
+
+        foreach (MstatFrozenObject o in t.GetFrozenObjects())
+            AddToDiff(o, result);
     }
 
     private static void AddToDiff(MstatTypeSpecification s, MstatData result)
@@ -123,6 +170,9 @@ partial class MstatData
 
         foreach (MstatMemberDefinition m in s.GetMembers())
             AddToDiff(m, result);
+
+        foreach (MstatFrozenObject o in s.GetFrozenObjects())
+            AddToDiff(o, result);
     }
 
     private static void AddToDiff(MstatMemberDefinition m, MstatData result)
@@ -144,6 +194,50 @@ partial class MstatData
         cache.AddSize(result, s.Handle, cache.Size);
     }
 
+    private static void AddToDiff(MstatManifestResource r, MstatData result)
+    {
+        ref ManifestResourceRowCache cache = ref result.GetRowCache(r.Handle);
+        cache.Name = r.Name;
+        cache.Size = r.Size;
+        cache.OwningAssembly = r.Assembly.Handle;
+
+        ref AssemblyRefRowCache owningAsmRowCache = ref result.GetRowCache(cache.OwningAssembly);
+        owningAsmRowCache.AddSize(r.Size);
+
+        cache.NextManifestResource = owningAsmRowCache.FirstManifestResource;
+        owningAsmRowCache.FirstManifestResource = r.Handle;
+    }
+
+    private static void AddToDiff(MstatFrozenObject o, MstatData result)
+    {
+        ref FrozenObjectRowCache cache = ref result.GetRowCache(o.Handle);
+        cache.InstanceType = o.InstanceType;
+        cache.NodeId = o.NodeId;
+        cache.Size = o.Size;
+        cache.OwningEntity = o.OwningEntity;
+
+        if (o.OwningEntity.IsNil)
+        {
+            cache.NextFrozenObject = result._firstUnownedFrozenObject;
+            result._firstUnownedFrozenObject = o.Handle;
+            result._unownedFrozenObjectSize += o.Size;
+        }
+        else if (o.OwningEntity.Kind == HandleKind.TypeReference)
+        {
+            ref TypeRefRowCache owningCache = ref result.GetRowCache((TypeReferenceHandle)o.OwningEntity);
+            cache.NextFrozenObject = owningCache.FirstFrozenObject;
+            owningCache.FirstFrozenObject = o.Handle;
+            owningCache.AddSize(result, (TypeReferenceHandle)o.OwningEntity, o.Size);
+        }
+        else if (o.OwningEntity.Kind == HandleKind.TypeSpecification)
+        {
+            ref TypeSpecRowCache owningCache = ref result.GetRowCache((TypeSpecificationHandle)o.OwningEntity);
+            cache.NextFrozenObject = owningCache.FirstFrozenObject;
+            owningCache.FirstFrozenObject = o.Handle;
+            owningCache.AddSize(result, (TypeSpecificationHandle)o.OwningEntity, o.Size);
+        }
+    }
+
     private struct SignatureEqualityComparer
     {
         private readonly MetadataReader _reader1;
@@ -155,7 +249,7 @@ partial class MstatData
             => (_reader1, _blob1, _reader2, _blob2) = (reader1, blob1, reader2, blob2);
 
         public static bool AreMethodSignaturesEqual(MetadataReader reader1, BlobReader blob1, MetadataReader reader2, BlobReader blob2)
-            => new SignatureEqualityComparer(reader1, blob1, reader2, blob2).AreMethodSignaturesEqual();
+            => new SignatureEqualityComparer(reader1, blob1, reader2, blob2).AreSignaturesEqual();
 
         public static bool AreMethodSpecSignaturesEqual(MetadataReader reader1, BlobReader blob1, MetadataReader reader2, BlobReader blob2)
             => new SignatureEqualityComparer(reader1, blob1, reader2, blob2).AreMethodSpecSignaturesEqual();
@@ -163,7 +257,7 @@ partial class MstatData
         public static bool AreTypeSignaturesEqual(MetadataReader reader1, BlobReader blob1, MetadataReader reader2, BlobReader blob2)
             => new SignatureEqualityComparer(reader1, blob1, reader2, blob2).AreTypeSignaturesEqual();
 
-        private bool AreMethodSignaturesEqual()
+        private bool AreSignaturesEqual()
         {
             SignatureHeader header1 = _blob1.ReadSignatureHeader();
             SignatureHeader header2 = _blob2.ReadSignatureHeader();
@@ -171,6 +265,15 @@ partial class MstatData
             if (header1 != header2)
                 return false;
 
+            if (header1.Kind == SignatureKind.Method)
+                return AreMethodSignaturesEqual(header1, header2);
+
+            Debug.Assert(header1.Kind == SignatureKind.Field);
+            return AreTypeSignaturesEqual();
+        }
+
+        private bool AreMethodSignaturesEqual(SignatureHeader header1, SignatureHeader header2)
+        {
             Debug.Assert(header1.Kind == SignatureKind.Method);
 
             if (header1.IsGeneric
@@ -222,7 +325,7 @@ partial class MstatData
                 SignatureTypeCode.Array => AreArrayTypeSignaturesEqual(),
                 SignatureTypeCode.GenericMethodParameter or SignatureTypeCode.GenericTypeParameter => _blob1.ReadCompressedInteger() == _blob2.ReadCompressedInteger(),
                 SignatureTypeCode.GenericTypeInstance => AreGenericTypeInstancesEqual(),
-                SignatureTypeCode.FunctionPointer => AreMethodSignaturesEqual(),
+                SignatureTypeCode.FunctionPointer => AreSignaturesEqual(),
                 SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier => AreTypeHandlesEqual() && AreTypeSignaturesEqual(),
                 SignatureTypeCode.TypeHandle => AreTypeHandlesEqual(),
                 _ => throw new Exception(typeCode.ToString()),

@@ -290,6 +290,7 @@ namespace sizoscope
                 MstatTypeSpecification typespec => typespec.NodeId,
                 MstatMemberDefinition memberdef => memberdef.NodeId,
                 MstatMethodSpecification methodspec => methodspec.NodeId,
+                int val => val,
                 _ => null
             };
 
@@ -301,10 +302,10 @@ namespace sizoscope
                     return;
                 }
 
-                var node = _data.GetNodeForId(id.Value);
+                var node = _data.GetNodeForId(id.Value, out string name);
                 if (node == null)
                 {
-                    MessageBox.Show("Unable to load dependency graph. Was IlcGenerateDgmlFile=true specified?");
+                    MessageBox.Show($"Could not find path to roots from {name}.");
                     return;
                 }
 

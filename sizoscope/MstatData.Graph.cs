@@ -10,15 +10,17 @@ partial class MstatData
     public bool DgmlSupported => _version.Major >= 2;
     public bool DgmlAvailable => DgmlSupported && _nameToNode != null;
 
-    public Node GetNodeForId(int id)
+    private string GetNameForId(int id)
     {
-        if (!DgmlAvailable)
-            return null;
-
         PEMemoryBlock nameMap = _peReader.GetSectionData(".names");
         BlobReader nameMapReader = nameMap.GetReader();
         nameMapReader.Offset = id;
-        string name = nameMapReader.ReadSerializedString();
+        return nameMapReader.ReadSerializedString();
+    }
+
+    public Node GetNodeForId(int id, out string name)
+    {
+        name = GetNameForId(id);
         return _nameToNode.GetValueOrDefault(name);
     }
 
