@@ -274,7 +274,7 @@ namespace sizoscope
         {
             if (!_data.DgmlSupported)
             {
-                MessageBox.Show("Dependency graph information is only available in .NET 8 Preview 4 or later.");
+                MessageBox.Show("Dependency graph information is only available in .NET 8 or later.");
                 return;
             }
 

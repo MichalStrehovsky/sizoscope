@@ -4,13 +4,13 @@ Sizoscope is a binary size investigation tool to help you optimize and reduce th
 
 It supports visualizing the size contributions of individual methods and types, but also namespaces and assemblies. It also allows diffing before/after snapshots and offers basic root cause analysis.
 
-For a cross-platform version of Sizoscope, check [SizoscopeX](https://github.com/hez2010/sizoscopeX).
-
 ## Installing Sizoscope
 
 ```shell
-$ dotnet tool install sizoscope --global --framework net7.0-windows
+$ dotnet tool install sizoscope --global
 ```
+
+There's an Avalonia-based fork of Sizoscope maintained by @hez2010 [here](https://github.com/hez2010/sizoscopeX).
 
 ## Using Sizoscope
 
@@ -41,7 +41,7 @@ The diff view will show you things that are unique to the baseline on the left a
 
 ## Root analysis
 
-ℹ️ NOTE: Root analysis is only supported starting in .NET 8 Preview 4. The MSTAT files generated with older SDKs don't have the necessary information.
+ℹ️ NOTE: Root analysis is only supported starting in .NET 8. The MSTAT files generated with older SDKs don't have the necessary information.
 
 The main window and the diff window will show you what is in the binary, but not _why_ it's in the binary. Double-clicking a node in the main window or diff window will open a root analysis window. This will try to explain _why_ something was included.
 

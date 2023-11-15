@@ -21,13 +21,9 @@
   <!-- HACK to allow packing as a .NET tool: https://github.com/dotnet/sdk/issues/16361 -->
   <Target Name="HackBeforePackToolValidation" BeforeTargets="_PackToolValidation">
       <PropertyGroup>
+          <TargetFramework>net7.0</TargetFramework>
           <TargetPlatformIdentifier></TargetPlatformIdentifier>
-      </PropertyGroup>
-  </Target>
-
-  <Target Name="HackAfterPackToolValidation" AfterTargets="_PackToolValidation">
-      <PropertyGroup>
-          <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
+          <TargetPlatformMoniker></TargetPlatformMoniker>
       </PropertyGroup>
   </Target>
   <!-- End of hack to allow packing as a .NET tool -->
