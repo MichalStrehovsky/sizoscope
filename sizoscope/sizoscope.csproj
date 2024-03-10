@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <RollForward>Major</RollForward>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -22,7 +22,7 @@
   <!-- HACK to allow packing as a .NET tool: https://github.com/dotnet/sdk/issues/16361 -->
   <Target Name="HackBeforePackToolValidation" BeforeTargets="_PackToolValidation">
       <PropertyGroup>
-          <TargetFramework>net7.0</TargetFramework>
+          <TargetFramework>net8.0</TargetFramework>
           <TargetPlatformIdentifier></TargetPlatformIdentifier>
           <TargetPlatformMoniker></TargetPlatformMoniker>
       </PropertyGroup>
@@ -50,6 +50,10 @@
 
   <ItemGroup>
     <Content Include="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TurboXml" Version="2.0.2" />
   </ItemGroup>
 
   <ItemGroup>
