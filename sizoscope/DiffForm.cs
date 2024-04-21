@@ -37,10 +37,10 @@ namespace sizoscope
 
         private void _leftTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            NodeMouseDoubleClickCommon(e.Node, _leftDiff);
+            NodeMouseDoubleClickCommon(e.Node, _leftDiff, _rightDiff);
         }
 
-        private void NodeMouseDoubleClickCommon(TreeNode treeNode, MstatData data)
+        private void NodeMouseDoubleClickCommon(TreeNode treeNode, MstatData data, MstatData compare)
         {
             if (!data.DgmlSupported)
             {
@@ -79,13 +79,13 @@ namespace sizoscope
                     return;
                 }
 
-                new RootForm(node).ShowDialog(this);
+                new RootForm(node, compare).ShowDialog(this);
             }
         }
 
         private void _rightTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            NodeMouseDoubleClickCommon(e.Node, _rightDiff);
+            NodeMouseDoubleClickCommon(e.Node, _rightDiff, _leftDiff);
         }
     }
 }
