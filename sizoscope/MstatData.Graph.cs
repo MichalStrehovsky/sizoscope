@@ -28,6 +28,8 @@ partial class MstatData
         return _nameToNode.GetValueOrDefault(name);
     }
 
+    public bool ContainsNamedNode(string name) => _nameToNode.ContainsKey(name);
+
     struct Reader : IXmlReadHandler
     {
         enum ReadMode { None, Nodes, Links }
