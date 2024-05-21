@@ -10,6 +10,8 @@ It supports visualizing the size contributions of individual methods and types, 
 $ dotnet tool install sizoscope --global
 ```
 
+Alternatively, download a release from the [Releases](https://github.com/MichalStrehovsky/sizoscope/releases) tab. The releases on the Releases tab are built with native AOT and are fully standalone/portable ZIPs. They work great under Linux with Wine.
+
 There's an Avalonia-based fork of Sizoscope maintained by @hez2010 [here](https://github.com/hez2010/sizoscopeX).
 
 ## Using Sizoscope
