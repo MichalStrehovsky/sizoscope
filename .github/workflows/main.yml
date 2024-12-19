@@ -17,10 +17,16 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Build
+      - name: Build (CI)
+        if: ${{ github.event.inputs.version == '' }}
         run: |
           cd sizoscope
           dotnet publish
+      - name: Build (CD)
+        if: ${{ github.event.inputs.version != '' }}
+        run: |
+          cd sizoscope
+          dotnet publish -p:Version=${{ github.event.inputs.version }}
       - name: Pack (CI)
         if: ${{ github.event.inputs.version == '' }}
         run: |
