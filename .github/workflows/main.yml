@@ -33,13 +33,13 @@ jobs:
           dotnet pack sizoscope.csproj -o .\nupkg  -p:Version=${{ github.event.inputs.version }}
       - name: Archive NuGet (CI)
         if: ${{ github.event.inputs.version == '' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: sizoscope.42.42.42.42.nupkg
           path: dotnet-tool/nupkg/sizoscope.42.42.42.42.nupkg
       - name: Archive NuGet (CD)
         if: ${{ github.event.inputs.version != '' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: sizoscope.${{ github.event.inputs.version }}.nupkg
           path: dotnet-tool/nupkg/sizoscope.${{ github.event.inputs.version }}.nupkg
