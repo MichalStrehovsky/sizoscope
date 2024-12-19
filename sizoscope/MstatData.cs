@@ -16,6 +16,8 @@ public partial class MstatData : IDisposable
 
     private readonly TypeReferenceHandle[] _primitiveTypeCodeToTypeRef;
 
+    private readonly List<(string Name, int Size)> _blobs;
+
     private int _typeSize;
     private int _methodSize;
     private int _fieldSize;
@@ -29,9 +31,14 @@ public partial class MstatData : IDisposable
         + _fieldSize
         + _unownedFrozenObjectSize
         + _ownedFrozenObjectSize
-        + _manifestResourceSize;
+        + _manifestResourceSize
+        + BlobsSize;
 
     public int UnownedFrozenObjectSize => _unownedFrozenObjectSize;
+
+    public int BlobsSize => _blobs.Sum(x => x.Size);
+
+    public IEnumerable<(string Name, int Size)> Blobs => _blobs;
 
     ~MstatData() => Dispose(false);
 
@@ -55,6 +62,7 @@ public partial class MstatData : IDisposable
         _assemblyRefCache = new AssemblyRefRowCache[_reader.GetTableRowCount(TableIndex.AssemblyRef) + 1];
         _formatter = new NameFormatter(this);
         _primitiveTypeCodeToTypeRef = new TypeReferenceHandle[s_primitiveNames.Length];
+        _blobs = new List<(string Name, int Size)>();
     }
 
     public void Dispose() => Dispose(true);
@@ -79,7 +87,7 @@ public partial class MstatData : IDisposable
         fs.Read(new Span<byte>(mem, length));
         var data = new MstatData(mem, length).Parse();
 
-        data.TryLoadAssociatedDgmlFile(fileName);
+        Task.Run(() => data.TryLoadAssociatedDgmlFile(fileName));
 
         return data;
     }
@@ -131,6 +139,7 @@ public partial class MstatData : IDisposable
     {
         ParseTypes();
         ParseMethods();
+        ParseBlobs();
 
         if (_version >= new Version(2, 1))
         {
@@ -379,6 +388,40 @@ public partial class MstatData : IDisposable
         }
 
         _manifestResourceCache = manifestResourceRowCaches.ToArray();
+    }
+
+    private void ParseBlobs()
+    {
+        MethodBodyBlock body = _peReader.GetMethodBody(GetGlobalMethod("Blobs").RelativeVirtualAddress);
+        BlobReader reader = body.GetILReader();
+
+        Version twoPointOne = new Version(2, 1);
+
+        while (reader.RemainingBytes > 0)
+        {
+            string name = _reader.GetUserString(reader.ILReadString());
+            int size = reader.ILReadI4Constant();
+
+            string friendlyName = name switch
+            {
+                "Metadata" => "Reflection and stack trace metadata",
+                "ExternalReferencesTable" => "Reflection and type loader support table",
+                "NativeLayoutInfo" => "Runtime type loader support data",
+                "InterfaceDispatchCellSection" => "Interface method dispatch cells",
+                "InterfaceDispatchMap" => "Interface method dispatch maps",
+                "UnboxingStub" => "Unboxing stubs",
+                "PInvokeMethodFixup" => "P/invoke method fixups",
+                "ReflectionInvokeMap" => "Reflection method invoke map",
+                "TypeMetadataMap" => "Reflection type metadata map",
+                "ReflectionFieldMap" => "Reflection field access map",
+                _ => null,
+            };
+
+            if (friendlyName is null)
+                continue;
+
+            _blobs.Add((friendlyName, size));
+        }
     }
 
     private static readonly string[] s_primitiveNames = new string[]

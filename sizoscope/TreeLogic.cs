@@ -20,6 +20,16 @@ namespace sizoscope
                 });
             }
 
+            if (data.BlobsSize > 0)
+            {
+                tree.Nodes.Add(new TreeNode($"Blobs ({AsFileSize(data.BlobsSize)})",
+                        ResourceImageIndex, ResourceImageIndex,
+                        new TreeNode[] { new TreeNode() })
+                {
+                    Tag = data,
+                });
+            }
+
             var asms = data.GetScopes();
             foreach (var asm in sorter.Sort(asms))
             {
@@ -60,6 +70,13 @@ namespace sizoscope
                     {
                         Tag = frozenObj.NodeId,
                     });
+                }
+            }
+            else if (node.Tag is MstatData blobData && node.ImageIndex == ResourceImageIndex)
+            {
+                foreach (var blob in sorter.Sort(blobData.Blobs))
+                {
+                    node.Nodes.Add(new TreeNode($"{blob.Name} ({AsFileSize(blob.AggregateSize)})", ResourceImageIndex, ResourceImageIndex));
                 }
             }
             else if (node.Tag is MstatAssembly resourceAssembly && node.ImageIndex == ResourceImageIndex)

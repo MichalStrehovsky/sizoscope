@@ -1,0 +1,13 @@
+<linker>
+  <assembly fullname="mscorlib">
+    <type fullname="System.Object" />
+  </assembly>
+  <assembly fullname="System.Resources.Extensions">
+    <type fullname="System.Resources.Extensions.DeserializingResourceReader" />
+    <type fullname="System.Resources.Extensions.RuntimeResourceSet" />
+    <type fullname="System.Resources.Extensions.UnknownType" />
+  </assembly>
+  <assembly fullname="System.Windows.Forms">
+    <type fullname="System.Windows.Forms.ImageListStreamer" />
+  </assembly>
+</linker>

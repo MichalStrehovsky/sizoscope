@@ -17,28 +17,32 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Build (CI)
+      - name: Build
+        run: |
+          cd sizoscope
+          dotnet publish
+      - name: Pack (CI)
         if: ${{ github.event.inputs.version == '' }}
         run: |
-          cd sizoscope
+          cd dotnet-tool
           dotnet pack sizoscope.csproj -o .\nupkg
-      - name: Build (CD)
+      - name: Pack (CD)
         if: ${{ github.event.inputs.version != '' }}
         run: |
-          cd sizoscope
+          cd dotnet-tool
           dotnet pack sizoscope.csproj -o .\nupkg  -p:Version=${{ github.event.inputs.version }}
       - name: Archive NuGet (CI)
         if: ${{ github.event.inputs.version == '' }}
         uses: actions/upload-artifact@v2
         with:
-          name: sizoscope.${{ github.event.inputs.version }}.nupkg
-          path: sizoscope/nupkg/sizoscope.42.42.42.42.nupkg
+          name: sizoscope.42.42.42.42.nupkg
+          path: dotnet-tool/nupkg/sizoscope.42.42.42.42.nupkg
       - name: Archive NuGet (CD)
         if: ${{ github.event.inputs.version != '' }}
         uses: actions/upload-artifact@v2
         with:
           name: sizoscope.${{ github.event.inputs.version }}.nupkg
-          path: sizoscope/nupkg/sizoscope.${{ github.event.inputs.version }}.nupkg
+          path: dotnet-tool/nupkg/sizoscope.${{ github.event.inputs.version }}.nupkg
       - name: Create tag
         if: ${{ github.event.inputs.version != '' && github.actor == 'MichalStrehovsky' }}
         run: |

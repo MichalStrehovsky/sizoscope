@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <Version Condition="'$(Version)' == ''">42.42.42.42</Version>
+
+    <PackAsTool>true</PackAsTool>
+    <Authors>Michal Strehovsky</Authors>
+    <Company>Michal Strehovsky</Company>
+    <Description>.NET tool to analyze size of Native AOT binaries.</Description>
+    <PackageProjectUrl>https://github.com/MichalStrehovsky/sizoscope</PackageProjectUrl>
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md">
+      <Pack>true</Pack>
+      <PackagePath>/</PackagePath>
+    </None>
+    <None Include="../docs/diffwindow.png">
+      <Pack>true</Pack>
+      <PackagePath>/docs/</PackagePath>
+    </None>
+    <None Include="../docs/mainwindow.png">
+      <Pack>true</Pack>
+      <PackagePath>/docs/</PackagePath>
+    </None>
+    <None Include="../docs/rootswindow.png">
+      <Pack>true</Pack>
+      <PackagePath>/docs/</PackagePath>
+    </None>
+    <None Include="../sizoscope/bin/Release/net9.0-windows7.0/win-x64/publish/sizoscope.exe">
+      <Pack>true</Pack>
+      <PackagePath>/tools/$(TargetFramework)/any/</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

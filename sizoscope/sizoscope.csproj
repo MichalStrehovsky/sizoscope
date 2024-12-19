@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <RollForward>Major</RollForward>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,42 +10,29 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version Condition="'$(Version)' == ''">42.42.42.42</Version>
 
-    <PackAsTool>true</PackAsTool>
-    <Authors>Michal Strehovsky</Authors>
-    <Company>Michal Strehovsky</Company>
-    <Description>.NET tool to analyze size of Native AOT binaries.</Description>
-    <PackageProjectUrl>https://github.com/MichalStrehovsky/sizoscope</PackageProjectUrl>
-    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishAot>true</PublishAot>
+
+    <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
+
+    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
   </PropertyGroup>
 
-  <!-- HACK to allow packing as a .NET tool: https://github.com/dotnet/sdk/issues/16361 -->
-  <Target Name="HackBeforePackToolValidation" BeforeTargets="_PackToolValidation">
-      <PropertyGroup>
-          <TargetFramework>net8.0</TargetFramework>
-          <TargetPlatformIdentifier></TargetPlatformIdentifier>
-          <TargetPlatformMoniker></TargetPlatformMoniker>
-      </PropertyGroup>
-  </Target>
-  <!-- End of hack to allow packing as a .NET tool -->
+  <ItemGroup>
+    <!-- We really should introduce a first class property for this -->
+    <RuntimeHostConfigurationOption Include="System.Windows.Forms.PictureBox.UseWebRequest" Value="false" Trim="true" />
+
+    <TrimmerRootDescriptor Include="ILLink.Descriptors.xml" />
+  </ItemGroup>
 
   <ItemGroup>
-    <None Include="../README.md">
-      <Pack>true</Pack>
-      <PackagePath>/</PackagePath>
-    </None>
-    <None Include="../docs/diffwindow.png">
-      <Pack>true</Pack>
-      <PackagePath>/docs/</PackagePath>
-    </None>
-    <None Include="../docs/mainwindow.png">
-      <Pack>true</Pack>
-      <PackagePath>/docs/</PackagePath>
-    </None>
-    <None Include="../docs/rootswindow.png">
-      <Pack>true</Pack>
-      <PackagePath>/docs/</PackagePath>
-    </None>
+    <IlcArg Include="--substitution:ILLink.SizeHacks.xml" />
   </ItemGroup>
 
   <ItemGroup>

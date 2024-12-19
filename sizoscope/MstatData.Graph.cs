@@ -109,6 +109,7 @@ partial class MstatData
 
         void IXmlReadHandler.OnXmlDeclaration(ReadOnlySpan<char> version, ReadOnlySpan<char> encoding, ReadOnlySpan<char> standalone, int line, int column)
         { }
+        void IXmlReadHandler.OnError(string message, int line, int column) => throw new Exception($"{message} ({line}:{column})");
     }
 
     private void TryLoadAssociatedDgmlFile(string fileName)

@@ -14,6 +14,10 @@ namespace sizoscope
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
+#pragma warning disable WFO5001
+            Application.SetColorMode(SystemColorMode.System);
+#pragma warning restore
+
             MainForm form;
             if (args.Length > 0 && File.Exists(args[0]))
                 form = new MainForm(args[0]);
