@@ -40,7 +40,7 @@ namespace sizoscope
             if (_data != null)
                 _data.Dispose();
 
-            _data = MstatData.Read(fileName);
+            _data = MstatData.Read(fileName, loadDgmlAsync: true);
 
             Text = $"{Path.GetFileName(fileName)} - Sizoscope";
 
@@ -83,7 +83,7 @@ namespace sizoscope
         {
             if (_openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                MstatData right = MstatData.Read(_openFileDialog.FileName);
+                MstatData right = MstatData.Read(_openFileDialog.FileName, loadDgmlAsync: false);
 
                 (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(_data, right);
 
@@ -333,7 +333,7 @@ namespace sizoscope
                 // BeginInvoke so that we don't block the drag source while the modal is open
                 BeginInvoke(() =>
                 {
-                    MstatData right = MstatData.Read(files[0]);
+                    MstatData right = MstatData.Read(files[0], loadDgmlAsync: false);
                     (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(_data, right);
                     new DiffForm(leftDiff, rightDiff, right.Size - _data.Size).ShowDialog(this);
                 });

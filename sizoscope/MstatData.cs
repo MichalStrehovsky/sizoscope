@@ -79,7 +79,7 @@ public partial class MstatData : IDisposable
             Marshal.FreeHGlobal(_peImage);
     }
 
-    public static unsafe MstatData Read(string fileName)
+    public static unsafe MstatData Read(string fileName, bool loadDgmlAsync)
     {
         using FileStream fs = File.OpenRead(fileName);
         int length = checked((int)fs.Length);
@@ -87,7 +87,10 @@ public partial class MstatData : IDisposable
         fs.Read(new Span<byte>(mem, length));
         var data = new MstatData(mem, length).Parse();
 
-        Task.Run(() => data.TryLoadAssociatedDgmlFile(fileName));
+        if (loadDgmlAsync)
+            Task.Run(() => data.TryLoadAssociatedDgmlFile(fileName));
+        else
+            data.TryLoadAssociatedDgmlFile(fileName);
 
         return data;
     }
