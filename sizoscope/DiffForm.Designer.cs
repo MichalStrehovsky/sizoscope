@@ -124,6 +124,7 @@
             statusStrip1.Items.AddRange(new ToolStripItem[] { _toolStripStatusLabel });
             statusStrip1.Location = new Point(0, 0);
             statusStrip1.Name = "statusStrip1";
+            statusStrip1.RenderMode = ToolStripRenderMode.ManagerRenderMode;
             statusStrip1.Size = new Size(755, 22);
             statusStrip1.TabIndex = 0;
             // 
