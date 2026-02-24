@@ -6,23 +6,86 @@ namespace sizoscope
     {
         private MstatData _leftDiff, _rightDiff;
         private TreeLogic.Sorter _sorter;
+        private ResolvedFile _resolvedLeft, _resolvedRight;
 
+        /// <summary>
+        /// Creates a DiffForm with pre-computed diff data (used from MainForm diff button).
+        /// </summary>
         public DiffForm(MstatData leftDiff, MstatData rightDiff, int diffSize)
         {
             InitializeComponent();
+            InitializeCommon();
 
             _leftDiff = leftDiff;
             _rightDiff = rightDiff;
-            _sorter = TreeLogic.Sorter.BySize();
-
-            ImageList imageList = new MainForm()._imageList;
-            _leftTree.ImageList = imageList;
-            _rightTree.ImageList = imageList;
 
             TreeLogic.RefreshTree(_leftTree, _leftDiff, _sorter);
             TreeLogic.RefreshTree(_rightTree, _rightDiff, _sorter);
 
             _toolStripStatusLabel.Text = $"Total accounted difference: {TreeLogic.AsFileSize(diffSize)}";
+        }
+
+        /// <summary>
+        /// Creates a DiffForm that loads and diffs the files asynchronously after showing the UI.
+        /// Used from CLI when two file paths are passed.
+        /// </summary>
+        public DiffForm(string leftFilePath, string rightFilePath)
+        {
+            InitializeComponent();
+            InitializeCommon();
+
+            _toolStripStatusLabel.Text = "Loading and computing diff...";
+            _leftTree.Enabled = false;
+            _rightTree.Enabled = false;
+
+            Shown += async (s, e) => await LoadDiffAsync(leftFilePath, rightFilePath);
+        }
+
+        private void InitializeCommon()
+        {
+            _sorter = TreeLogic.Sorter.BySize();
+
+            ImageList imageList = new MainForm()._imageList;
+            _leftTree.ImageList = imageList;
+            _rightTree.ImageList = imageList;
+        }
+
+        private async Task LoadDiffAsync(string leftFilePath, string rightFilePath)
+        {
+            try
+            {
+                var result = await Task.Run(() =>
+                {
+                    var rl = ResolvedFile.Open(leftFilePath);
+                    var rr = ResolvedFile.Open(rightFilePath);
+
+                    MstatData left = MstatData.Read(rl.MstatPath, loadDgmlAsync: true);
+                    MstatData right = MstatData.Read(rr.MstatPath, loadDgmlAsync: false);
+
+                    (MstatData ld, MstatData rd) = MstatData.Diff(left, right);
+                    int ds = right.Size - left.Size;
+
+                    return (ld, rd, ds, rl, rr);
+                });
+
+                _resolvedLeft = result.rl;
+                _resolvedRight = result.rr;
+                _leftDiff = result.ld;
+                _rightDiff = result.rd;
+
+                TreeLogic.RefreshTree(_leftTree, _leftDiff, _sorter);
+                TreeLogic.RefreshTree(_rightTree, _rightDiff, _sorter);
+
+                _toolStripStatusLabel.Text = $"Total accounted difference: {TreeLogic.AsFileSize(result.ds)}";
+                _leftTree.Enabled = true;
+                _rightTree.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                _toolStripStatusLabel.Text = $"Error: {ex.Message}";
+                _leftTree.Enabled = true;
+                _rightTree.Enabled = true;
+            }
         }
 
         private void _leftTree_BeforeExpand(object sender, TreeViewCancelEventArgs e)
