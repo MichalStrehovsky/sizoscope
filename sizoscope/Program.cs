@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace sizoscope
 {
     internal static class Program
@@ -10,50 +8,17 @@ namespace sizoscope
         [STAThread]
         static void Main(string[] args)
         {
-            // Separate flags from file paths
-            bool textMode = false;
-            string? outputFile = null;
+            // Collect file paths from args (ignore unknown flags gracefully)
             var filePaths = new List<string>();
-
             for (int i = 0; i < args.Length; i++)
             {
-                if (string.Equals(args[i], "--text", StringComparison.OrdinalIgnoreCase))
-                    textMode = true;
-                else if (string.Equals(args[i], "--output", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-                    outputFile = args[++i];
-                else
+                if (!args[i].StartsWith("-"))
                     filePaths.Add(args[i]);
             }
 
-            // Two files = diff mode
+            // Two files = GUI diff mode
             if (filePaths.Count == 2 && File.Exists(filePaths[0]) && File.Exists(filePaths[1]))
             {
-                if (textMode)
-                {
-                    // --text mode: do all work synchronously, print summary, and exit
-                    using var resolvedLeft = ResolvedFile.Open(filePaths[0]);
-                    using var resolvedRight = ResolvedFile.Open(filePaths[1]);
-
-                    MstatData left = MstatData.Read(resolvedLeft.MstatPath, loadDgmlAsync: false, skipDgml: true);
-                    MstatData right = MstatData.Read(resolvedRight.MstatPath, loadDgmlAsync: false, skipDgml: true);
-
-                    (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(left, right);
-                    int diffSize = right.Size - left.Size;
-
-                    if (outputFile != null)
-                    {
-                        using var writer = new StreamWriter(outputFile);
-                        TextDiffOutput.Print(writer, leftDiff, rightDiff, diffSize);
-                    }
-                    else
-                    {
-                        TextDiffOutput.SetupConsoleOutput();
-                        TextDiffOutput.Print(leftDiff, rightDiff, diffSize);
-                    }
-                    return;
-                }
-
-                // GUI diff mode: show DiffForm immediately, load data in background
                 ApplicationConfiguration.Initialize();
 
 #pragma warning disable WFO5001

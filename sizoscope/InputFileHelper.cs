@@ -6,51 +6,57 @@ namespace sizoscope
 {
     /// <summary>
     /// Resolves an input file path that may be a .zip archive containing .mstat and .dgml files.
-    /// When the input is a .zip, the relevant files are extracted to a temp directory.
-    /// Implements IDisposable to clean up temp files.
+    /// For .zip files, the archive is kept open and streams are read directly from it.
+    /// Implements IDisposable to close the archive when done.
     /// </summary>
     internal sealed class ResolvedFile : IDisposable
     {
-        /// <summary>
-        /// The resolved path to the .mstat file (either the original path or the extracted temp path).
-        /// </summary>
-        public string MstatPath { get; }
+        /// <summary>The original file path provided by the user.</summary>
+        public string OriginalPath { get; }
 
-        /// <summary>
-        /// The temp directory created for extraction, or null if no extraction was needed.
-        /// </summary>
-        private readonly string? _tempDir;
+        /// <summary>The length of the .mstat data in bytes.</summary>
+        public long MstatLength { get; }
 
-        private ResolvedFile(string mstatPath, string? tempDir)
+        private readonly ZipArchive? _archive;
+        private readonly ZipArchiveEntry? _mstatEntry;
+        private readonly ZipArchiveEntry? _dgmlEntry;
+        private readonly string? _filePath; // non-null for plain files
+
+        private ResolvedFile(string originalPath, string filePath)
         {
-            MstatPath = mstatPath;
-            _tempDir = tempDir;
+            OriginalPath = originalPath;
+            _filePath = filePath;
+            MstatLength = new FileInfo(filePath).Length;
+        }
+
+        private ResolvedFile(string originalPath, ZipArchive archive, ZipArchiveEntry mstatEntry, ZipArchiveEntry? dgmlEntry)
+        {
+            OriginalPath = originalPath;
+            _archive = archive;
+            _mstatEntry = mstatEntry;
+            _dgmlEntry = dgmlEntry;
+            MstatLength = mstatEntry.Length;
         }
 
         /// <summary>
-        /// Opens an input file. If it's a .zip archive, extracts the first .mstat file
-        /// (and any companion .scan.dgml.xml file) to a temp directory.
-        /// Otherwise, returns the path as-is.
+        /// Opens an input file. If it's a .zip archive, opens the archive and locates
+        /// the .mstat and companion .scan.dgml.xml entries. Otherwise, treats the file as-is.
         /// </summary>
         public static ResolvedFile Open(string path)
         {
             if (string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase))
             {
-                return ExtractFromZip(path);
+                return OpenZip(path);
             }
 
-            return new ResolvedFile(path, null);
+            return new ResolvedFile(path, path);
         }
 
-        private static ResolvedFile ExtractFromZip(string zipPath)
+        private static ResolvedFile OpenZip(string zipPath)
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), "sizoscope_" + Guid.NewGuid().ToString("N")[..8]);
-            Directory.CreateDirectory(tempDir);
-
+            var archive = ZipFile.OpenRead(zipPath);
             try
             {
-                using var archive = ZipFile.OpenRead(zipPath);
-
                 // Find the first .mstat entry
                 ZipArchiveEntry? mstatEntry = null;
                 foreach (var entry in archive.Entries)
@@ -67,37 +73,68 @@ namespace sizoscope
                     throw new InvalidOperationException($"No .mstat file found in archive: {zipPath}");
                 }
 
-                // Extract the .mstat file
-                string mstatDest = Path.Combine(tempDir, mstatEntry.Name);
-                mstatEntry.ExtractToFile(mstatDest);
-
                 // Look for a companion .scan.dgml.xml file
+                ZipArchiveEntry? dgmlEntry = null;
                 string dgmlName = Path.ChangeExtension(mstatEntry.Name, "scan.dgml.xml");
                 foreach (var entry in archive.Entries)
                 {
                     if (string.Equals(entry.Name, dgmlName, StringComparison.OrdinalIgnoreCase) && entry.Length > 0)
                     {
-                        entry.ExtractToFile(Path.Combine(tempDir, entry.Name));
+                        dgmlEntry = entry;
                         break;
                     }
                 }
 
-                return new ResolvedFile(mstatDest, tempDir);
+                return new ResolvedFile(zipPath, archive, mstatEntry, dgmlEntry);
             }
             catch
             {
-                // Clean up on failure
-                try { Directory.Delete(tempDir, true); } catch { }
+                archive.Dispose();
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Opens a stream to read the .mstat data.
+        /// </summary>
+        public Stream OpenMstat()
+        {
+            if (_archive != null)
+                return _mstatEntry!.Open();
+
+            return File.OpenRead(_filePath!);
+        }
+
+        /// <summary>
+        /// Opens a stream to read the .scan.dgml.xml data, or returns null if not available.
+        /// </summary>
+        public Stream? OpenDgml()
+        {
+            if (_archive != null)
+                return _dgmlEntry?.Open();
+
+            string dgmlPath = Path.ChangeExtension(_filePath!, "scan.dgml.xml");
+            if (File.Exists(dgmlPath))
+                return File.Open(dgmlPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+            return null;
+        }
+
+        /// <summary>Whether DGML data is available.</summary>
+        public bool HasDgml
+        {
+            get
+            {
+                if (_archive != null)
+                    return _dgmlEntry != null;
+
+                return File.Exists(Path.ChangeExtension(_filePath!, "scan.dgml.xml"));
             }
         }
 
         public void Dispose()
         {
-            if (_tempDir != null)
-            {
-                try { Directory.Delete(_tempDir, true); } catch { }
-            }
+            _archive?.Dispose();
         }
     }
 }

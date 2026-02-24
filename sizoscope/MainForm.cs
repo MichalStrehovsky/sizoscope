@@ -44,7 +44,8 @@ namespace sizoscope
             if (_data != null)
                 _data.Dispose();
 
-            _data = MstatData.Read(_resolvedFile.MstatPath, loadDgmlAsync: true);
+            using (var mstatStream = _resolvedFile.OpenMstat())
+                _data = MstatData.Read(mstatStream, _resolvedFile.MstatLength, _resolvedFile.OpenDgml, loadDgmlAsync: true);
 
             Text = $"{Path.GetFileName(fileName)} - Sizoscope";
 
@@ -88,7 +89,9 @@ namespace sizoscope
             if (_openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 using var resolved = ResolvedFile.Open(_openFileDialog.FileName);
-                MstatData right = MstatData.Read(resolved.MstatPath, loadDgmlAsync: false);
+                MstatData right;
+                using (var mstatStream = resolved.OpenMstat())
+                    right = MstatData.Read(mstatStream, resolved.MstatLength, resolved.OpenDgml);
 
                 (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(_data, right);
 
@@ -339,7 +342,9 @@ namespace sizoscope
                 BeginInvoke(() =>
                 {
                     using var resolved = ResolvedFile.Open(files[0]);
-                    MstatData right = MstatData.Read(resolved.MstatPath, loadDgmlAsync: false);
+                    MstatData right;
+                    using (var mstatStream = resolved.OpenMstat())
+                        right = MstatData.Read(mstatStream, resolved.MstatLength, resolved.OpenDgml);
                     (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(_data, right);
                     new DiffForm(leftDiff, rightDiff, right.Size - _data.Size).ShowDialog(this);
                 });

@@ -59,8 +59,13 @@ namespace sizoscope
                     var rl = ResolvedFile.Open(leftFilePath);
                     var rr = ResolvedFile.Open(rightFilePath);
 
-                    MstatData left = MstatData.Read(rl.MstatPath, loadDgmlAsync: true);
-                    MstatData right = MstatData.Read(rr.MstatPath, loadDgmlAsync: false);
+                    MstatData left;
+                    using (var ms = rl.OpenMstat())
+                        left = MstatData.Read(ms, rl.MstatLength, rl.OpenDgml, loadDgmlAsync: true);
+
+                    MstatData right;
+                    using (var ms = rr.OpenMstat())
+                        right = MstatData.Read(ms, rr.MstatLength, rr.OpenDgml);
 
                     (MstatData ld, MstatData rd) = MstatData.Diff(left, right);
                     int ds = right.Size - left.Size;

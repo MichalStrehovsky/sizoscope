@@ -112,17 +112,15 @@ partial class MstatData
         void IXmlReadHandler.OnError(string message, int line, int column) => throw new Exception($"{message} ({line}:{column})");
     }
 
-    private void TryLoadAssociatedDgmlFile(string fileName)
+    private void LoadDgml(Func<Stream?> openDgmlStream)
     {
-        fileName = Path.ChangeExtension(fileName, "scan.dgml.xml");
-
-        if (!File.Exists(fileName))
+        using var stream = openDgmlStream();
+        if (stream == null)
             return;
 
 #if true
-        using FileStream fs = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
         var handler = new Reader();
-        XmlParser.Parse(fs, ref handler);
+        XmlParser.Parse(stream, ref handler);
         _nameToNode = handler.ToDictionary();
 #elif false
         var idToNode = new Dictionary<int, Node>();
