@@ -45,11 +45,11 @@ namespace SizoscopeCli
 
             MstatData left;
             using (var ms = resolvedLeft.OpenMstat())
-                left = MstatData.Read(ms, resolvedLeft.MstatLength, resolvedLeft.OpenDgml, skipDgml: true);
+                left = MstatData.Read(ms, resolvedLeft.MstatLength, () => null);
 
             MstatData right;
             using (var ms = resolvedRight.OpenMstat())
-                right = MstatData.Read(ms, resolvedRight.MstatLength, resolvedRight.OpenDgml, skipDgml: true);
+                right = MstatData.Read(ms, resolvedRight.MstatLength, () => null);
 
             (MstatData leftDiff, MstatData rightDiff) = MstatData.Diff(left, right);
             int diffSize = right.Size - left.Size;

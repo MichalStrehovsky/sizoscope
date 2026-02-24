@@ -79,8 +79,11 @@ public partial class MstatData : IDisposable
             Marshal.FreeHGlobal(_peImage);
     }
 
-    public static unsafe MstatData Read(Stream mstatStream, long mstatLength, Func<Stream?> openDgmlStream, bool loadDgmlAsync = false, bool skipDgml = false)
+    public static unsafe MstatData Read(Stream mstatStream, long mstatLength, Func<Stream?> openDgmlStream, bool loadDgmlAsync = false)
     {
+        // Read the stream directly into unmanaged memory for PEReader.
+        // The caller provides the length (from FileInfo.Length or ZipArchiveEntry.Length)
+        // so we can allocate once and avoid an intermediate managed buffer.
         int length = checked((int)mstatLength);
         byte* mem = (byte*)Marshal.AllocHGlobal(length);
         var span = new Span<byte>(mem, length);
@@ -91,15 +94,13 @@ public partial class MstatData : IDisposable
             if (read == 0) break;
             totalRead += read;
         }
+
         var data = new MstatData(mem, length).Parse();
 
-        if (!skipDgml)
-        {
-            if (loadDgmlAsync)
-                Task.Run(() => data.LoadDgml(openDgmlStream));
-            else
-                data.LoadDgml(openDgmlStream);
-        }
+        if (loadDgmlAsync)
+            Task.Run(() => data.LoadDgml(openDgmlStream));
+        else
+            data.LoadDgml(openDgmlStream);
 
         return data;
     }
