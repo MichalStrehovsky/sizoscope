@@ -17,6 +17,7 @@
             {
                 components.Dispose();
             }
+            _resolvedFile?.Dispose();
             base.Dispose(disposing);
         }
 
@@ -317,7 +318,8 @@
             // _openFileDialog
             // 
             _openFileDialog.FileName = "openFileDialog1";
-            _openFileDialog.Filter = "Managed statistics|*.mstat";
+            _openFileDialog.Filter = "Managed statistics|*.mstat|ZIP archives|*.zip|All supported|*.mstat;*.zip";
+            _openFileDialog.FilterIndex = 3;
             // 
             // MainForm
             // 
