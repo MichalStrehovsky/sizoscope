@@ -27,16 +27,6 @@ jobs:
         run: |
           cd sizoscope
           dotnet publish -p:Version=${{ github.event.inputs.version }}
-      - name: Build sizoscope-cli (CI)
-        if: ${{ github.event.inputs.version == '' }}
-        run: |
-          cd sizoscope-cli
-          dotnet publish
-      - name: Build sizoscope-cli (CD)
-        if: ${{ github.event.inputs.version != '' }}
-        run: |
-          cd sizoscope-cli
-          dotnet publish -p:Version=${{ github.event.inputs.version }}
       - name: Pack sizoscope (CI)
         if: ${{ github.event.inputs.version == '' }}
         run: |
