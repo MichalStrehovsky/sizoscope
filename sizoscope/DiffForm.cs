@@ -61,7 +61,7 @@ namespace sizoscope
 
                     MstatData left;
                     using (var ms = rl.OpenMstat())
-                        left = MstatData.Read(ms, rl.MstatLength, rl.OpenDgml, loadDgmlAsync: true);
+                        left = MstatData.Read(ms, rl.MstatLength, rl.OpenDgml);
 
                     MstatData right;
                     using (var ms = rr.OpenMstat())

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sizoscope", "sizoscope.csproj", "{67B7AFF9-A81C-41AB-97BB-752EA54B2004}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sizoscope-cli", "..\sizoscope-cli\sizoscope-cli.csproj", "{9B932451-61EA-4B88-8F3B-284FF9426636}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sizoscope-cli", "..\dotnet-tool-cli\sizoscope-cli.csproj", "{9B932451-61EA-4B88-8F3B-284FF9426636}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
