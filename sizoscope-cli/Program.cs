@@ -6,7 +6,7 @@ namespace SizoscopeCli
     {
         static int Main(string[] args)
         {
-            string? outputFile = null;
+            string outputFile = null;
             var filePaths = new List<string>();
 
             for (int i = 0; i < args.Length; i++)
