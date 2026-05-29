@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -79,7 +79,7 @@ public partial class MstatData : IDisposable
             Marshal.FreeHGlobal(_peImage);
     }
 
-    public static unsafe MstatData Read(Stream mstatStream, long mstatLength, Func<Stream?> openDgmlStream, bool loadDgmlAsync = false)
+    public static unsafe MstatData Read(Stream mstatStream, long mstatLength, Func<Stream> openDgmlStream, bool loadDgmlAsync = false)
     {
         // Read the stream directly into unmanaged memory for PEReader.
         // The caller provides the length (from FileInfo.Length or ZipArchiveEntry.Length)
