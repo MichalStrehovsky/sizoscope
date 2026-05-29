@@ -40,12 +40,12 @@ jobs:
       - name: Pack sizoscope-cli (CI)
         if: ${{ github.event.inputs.version == '' }}
         run: |
-          cd dotnet-tool-cli
+          cd sizoscope-cli
           dotnet pack sizoscope-cli.csproj -o .\nupkg
       - name: Pack sizoscope-cli (CD)
         if: ${{ github.event.inputs.version != '' }}
         run: |
-          cd dotnet-tool-cli
+          cd sizoscope-cli
           dotnet pack sizoscope-cli.csproj -o .\nupkg  -p:Version=${{ github.event.inputs.version }}
       - name: Archive sizoscope NuGet (CI)
         if: ${{ github.event.inputs.version == '' }}
@@ -64,13 +64,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sizoscope-cli.42.42.42.42.nupkg
-          path: dotnet-tool-cli/nupkg/sizoscope-cli.42.42.42.42.nupkg
+          path: sizoscope-cli/nupkg/sizoscope-cli.42.42.42.42.nupkg
       - name: Archive sizoscope-cli NuGet (CD)
         if: ${{ github.event.inputs.version != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: sizoscope-cli.${{ github.event.inputs.version }}.nupkg
-          path: dotnet-tool-cli/nupkg/sizoscope-cli.${{ github.event.inputs.version }}.nupkg
+          path: sizoscope-cli/nupkg/sizoscope-cli.${{ github.event.inputs.version }}.nupkg
       - name: Create tag
         if: ${{ github.event.inputs.version != '' && github.actor == 'MichalStrehovsky' }}
         run: |
