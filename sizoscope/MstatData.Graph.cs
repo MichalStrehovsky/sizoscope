@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection.Metadata;
@@ -112,7 +112,7 @@ partial class MstatData
         void IXmlReadHandler.OnError(string message, int line, int column) => throw new Exception($"{message} ({line}:{column})");
     }
 
-    private void LoadDgml(Func<Stream?> openDgmlStream)
+    private void LoadDgml(Func<Stream> openDgmlStream)
     {
         using var stream = openDgmlStream();
         if (stream == null)
