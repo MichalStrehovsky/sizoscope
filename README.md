@@ -10,6 +10,12 @@ It supports visualizing the size contributions of individual methods and types, 
 $ dotnet tool install sizoscope --global
 ```
 
+For command-line diffing (no GUI), install the CLI tool:
+
+```shell
+$ dotnet tool install sizoscope-cli --global
+```
+
 Alternatively, download a release from the [Releases](https://github.com/MichalStrehovsky/sizoscope/releases) tab. The releases on the Releases tab are built with native AOT and are fully standalone/portable ZIPs. They work great under Linux with Wine.
 
 There's an Avalonia-based fork of Sizoscope maintained by @hez2010 [here](https://github.com/hez2010/sizoscopeX).
@@ -54,6 +60,38 @@ In the above screenshot, the reason why the top node was included in the executa
 ## Tips and tricks
 
 * Passing a MSTAT file name on the command line will launch Sizoscope with the file open. You can associated *.mstat files with Sizoscope in shell.
+* Passing two MSTAT file names on the command line will open the diff view directly.
 * You can drag and drop .mstat files into the UI to open them.
 * Holding Alt when dragging and dropping will open a diff against the open file.
 * MSTAT files are loaded to memory and the associated file system files are closed. This is done on purpose so that you can quickly do before/after comparisons: simply open the MSTAT, make your change to the project and re-publish, and do a diff _against the same file_.
+* Both the GUI and CLI tools accept `.zip` archives containing `.mstat` (and optionally `.scan.dgml.xml`) files. The `.mstat` is read directly from the archive without extracting to disk.
+
+## Command-line diffing
+
+The `sizoscope-cli` tool provides a non-interactive way to diff two MSTAT files:
+
+```shell
+$ sizoscope-cli baseline.mstat compare.mstat
+Total accounted size difference: 206.2 kB
+
+=== New / Grown ===
+  +129.0 kB     System.Private.CoreLib
+  +52.4 kB      System.Net.Http
+  ...
+
+=== Removed / Shrunk ===
+  -1.2 kB       System.Collections
+  ...
+```
+
+To write output to a file instead of stdout:
+
+```shell
+$ sizoscope-cli baseline.mstat compare.mstat --output diff.txt
+```
+
+ZIP archives work as well:
+
+```shell
+$ sizoscope-cli baseline.mstat.zip compare.mstat.zip
+```

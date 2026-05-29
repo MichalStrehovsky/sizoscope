@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace sizoscope
 {
     internal static class Program
@@ -18,8 +16,10 @@ namespace sizoscope
             Application.SetColorMode(SystemColorMode.System);
 #pragma warning restore
 
-            MainForm form;
-            if (args.Length > 0 && File.Exists(args[0]))
+            Form form;
+            if (args.Length >= 2 && File.Exists(args[0]) && File.Exists(args[1]))
+                form = new DiffForm(args[0], args[1]);
+            else if (args.Length >= 1 && File.Exists(args[0]))
                 form = new MainForm(args[0]);
             else
                 form = new MainForm();
